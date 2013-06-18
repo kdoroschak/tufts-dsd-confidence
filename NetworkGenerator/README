@@ -1,0 +1,4 @@
+USAGE: ./network_generator <commands>
+
+For an up-to-date list of available commands, use
+./network_generator -h

@@ -1,0 +1,100 @@
+#!/usr/bin/python
+
+''' PROBABILISTIC NETWORK GENERATOR
+Generate edges in a network based on a given probability value. '''
+
+import sys
+import getopt
+import random
+
+''' GENERATE EDGE
+Randomly decide whether or not this edge exists based on the input probability.'''
+def generateEdge(p):
+	p = float(p)
+	rand = random.random()
+	#print "p =", p, "rand =", rand
+	return rand <= p
+
+def main(argv):
+	inputfile = ''
+	outputfile = ''
+	numNetworks = 1
+	
+	# Read in command line args and process
+	try:
+		opts, args = getopt.getopt(argv,"hi:o:n:")
+	except getopt.GetoptError:
+		print ''
+		print 'USAGE: ./network_generator <options>'
+		print 'Use -h for more information about options.'
+	for opt, arg in opts:
+		if opt == '-h':
+			print ''
+			print 'USAGE: ./network_generator <options>'
+			print ''
+			print 'Options:'
+			print '  -h                 Print this help message.'			
+			print '  -n <numNetworks>   Change the number of networks generated. Default is 1.'
+			print '  -i <inputfile>     Specify the input file containing edges and probabilities.'
+			print '  -o <outputfile>    Specify the output file for randomly determined edges.'
+			print '      * If generating multiple networks, the network # will be prepended.'
+			print ''
+			print 'File formats:'
+			print '  Input:    vertex1	vertex2	p(v1, v2)'
+			print '  Output:   vertex1	vertex2'
+			print '    ***length of output file <= length of input file***'
+			print ''
+			sys.exit(1)
+		elif opt == '-i':
+			inputfile = arg
+		elif opt == '-o':
+			outputfile = arg
+		elif opt == '-n':
+			numNetworks = int(arg)
+
+	#print "input file is:", inputfile
+	#print "output file is:", outputfile
+
+	# Open input file for reading
+	edgesIn = ''
+	try:
+		edgesIn  = open(inputfile, 'r')
+	except:
+		print 'Error opening the input file. Try again.'
+		sys.exit(1)
+
+	# Create n random networks
+	digits = len(str(numNetworks))
+	for n in range(numNetworks):
+		edgesIn.seek(0)
+		# Prepare the proper output file
+		edgesOut = ''
+		if (numNetworks == 1):
+			nthFileOutput = outputfile
+		else:
+			nthFilePrepend = str(n).zfill(digits)
+			nthFileOutput  = "-".join([outputfile, nthFilePrepend])
+			nthFileOutput  = ''.join([nthFileOutput, '.txt'])
+		try:
+			edgesOut = open(nthFileOutput, 'w')
+		except:
+			print 'Error opening the output file. Try again.'
+			sys.exit(1)
+
+		# Generate edges and write to output file
+		for edgeLine in edgesIn:
+			edgecol = edgeLine.split('\t')
+			v1 = edgecol[0].strip()
+			v2 = edgecol[1].strip()
+			p  = edgecol[2].strip()
+
+			if (generateEdge(p)):
+				edgesOut.write('\t'.join([v1, v2]))
+				edgesOut.write('\n')
+				#print "Writing an edge!"
+
+		 # Clean up
+		edgesOut.close()	
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
