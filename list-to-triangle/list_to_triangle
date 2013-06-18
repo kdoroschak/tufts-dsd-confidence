@@ -1,0 +1,53 @@
+#!/usr/bin/env python2.7
+
+# *******************************************************************
+# Takes in a list of DSD values and an ordered
+# list of protein names. Uses these to create
+# and output a file containing the upper-right
+# corner of a matrix representing DSD values
+# (excluding the diagonal, which is all 0).
+# *******************************************************************
+
+
+import sys
+import argparse
+
+# Functions *********************************************************
+
+# Opens filename, with option, or exits program
+def open_or_abort(filename, option=None):
+    try:
+        if option != None:
+            opened = open(filename, option)
+        else:
+            opened = open(filename)
+    except:
+        print "Could not open file", filename
+        exit()
+    return opened
+
+# **** Main *********************************************************
+def main():
+
+    # Set up argument parser
+    temp = "Creates a partial DSD matrix."
+    temp += " For use with majorityvote software."
+    parser = argparse.ArgumentParser(description=temp)
+
+    parser.add_argument("DSD1", help="The first of the two DSD output files to compare.")
+    parser.add_argument("DSD2", help="The second of the two DSD output files to compare.")
+    parser.add_argument("-ra", "--run_all", default=False, help="Run all tests.", action="store_true")
+    parser.add_argument("-m", "--mismatch", default=False, help="Calculate # of mismatches between files "
+                        + "(interactions where only one file contains a DSD value).", action="store_true")
+    parser.add_argument("-g", "--greater", default=False, help="Prints number of connections with DSD values "
+                        + "that are greater in the second file.", action="store_true")
+    parser.add_argument("-l", "--lower", default=False, help="Prints number of connections with DSD values "
+                        + "that are lower in the second file.", action="store_true")
+    parser.add_argument("-a", "--average", default=False, help="Prints averages of DSD values for both files. "
+                        + "Does not include 'NotConnected' edges when calculating.", action="store_true")
+    parser.add_argument("-r", "--range_dsd", default=False, help="Prints max and min DSD values in both files.", action="store_true")
+    parser.add_argument("-d", "--dist", default=None, help="Prints distribution of DSD values."
+    + "Specify size of partitions. Default of 1.", type=float)
+
+    # Parse options
+    options = parser.parse_args()
