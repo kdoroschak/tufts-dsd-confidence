@@ -1,0 +1,92 @@
+#/usr/bin/env python2.7
+
+import os, sys, getopt
+
+def main(argv):
+	mipsFile = ''
+	outputFile = ''
+	orderFile = ''
+	mipsAnnotations = {}
+	funCats = set()
+
+# Read in MIPS File
+#         ordered list of proteins
+# Output tab delimited protein anotation file
+#        list of categories
+
+# Read in generic protein annotation file
+#         list of categories (opt)
+#         flag for level
+# If list of categories not provided, create & output list
+# Output translation to majority vote input "binary" format
+
+	print("got here before failing")
+	# Read in command line args and process
+	try:
+		opts, args = getopt.getopt(argv,"hm:l:o:")
+	except getopt.GetoptError:
+		print ''
+		print 'USAGE: ./FormatMips-MajorityVoteInput <options>'
+		print 'Use -h for more information about options.'
+	for opt, arg in opts:
+		if opt == '-h':
+			print 'USAGE: ./FormatMips-MajorityVoteInput <options>'
+			print '  -h	Display this help message.'
+			print '  -m	MIPS file of functional categories by protein.'
+			print '  -l Ordered list of proteins -- must be in exact desired order.'
+			print '  -o	Name of output file in generic annotation-tab format: protein\tannotation|annotation|anotation. No file extension needed.'
+			print ''
+			sys.exit(1)
+		elif opt == '-m':
+			mipsFile = arg
+		elif opt == 'l':
+			orderFile = arg
+		elif opt == '-o':
+			outputFile = arg
+
+	# Open files
+	mipsFile = open(mipsFile, 'r')
+	orderFile = open(orderFile, 'r')
+	outputFile = open(outputFile + '.ann', 'w')
+	catFile = open(outputFile + '-catList.txt', 'w')
+
+	# Loop through MIPS annotations file and populate dictionary
+	for line in mipsFile:
+		cols = line.split('|')
+		protein = cols[0]
+		ann  = cols[1]
+		annList = mipsAnnotations.get(protein)
+		if annList != None:
+			annList.add(ann)
+			mipsAnnotations[protein] = annList
+		else:
+			annList = set(ann)
+			mipsAnnotations[protein] = annList
+
+		# Add annotations to set of functional categories
+		cats = annList.split('.')
+		for cat in cats:
+			funCats.add(cat)
+	mipsFile.close()
+
+	# Write category list out to file
+	funCats = list(funCats)
+	catFile.write(funCats + '\n')
+	catFile.close()
+
+	# Loop through order list to output formatted annotations
+	for line in orderFile:
+		protein = line.strip()
+		#print protein
+		
+		# Look up protein annotation in dictionary
+		annList = mipsAnnotations.get(protein)
+		annList = ('|').join(annList)
+		outputFile.write(protein + '\t' + annList + '\n')
+
+	orderFile.close()
+	outputFile.close()
+
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
