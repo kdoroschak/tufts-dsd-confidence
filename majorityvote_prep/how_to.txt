@@ -1,0 +1,22 @@
+How to run Majority Voting
+Tony Cannistra
+
+1) GetAdjacency
+	python2.7 /useful\ scripts/GetAdjacency.py <PPIs, not DSD> <name you want for adj matrix> <name you want for names file>
+
+2) FunAnnotate:
+/useful\ scripts/funannotate.py ../../../funcat/funcat-2.1_data_20070316_pure physical+rescue.names -o physical+rescue.level3annotation -p physical+rescue.level3random -l 3 
+
+/useful\ scripts/funannotate.py -h 
+
+-o : name of annotations file
+-p : name of random permutation file
+-l : level (we're using 3)
+
+3) python2.7 ../../../../majorityvote/DSDmv.py -l physical+rescue.level3annotation physical+rescue.adjacency -k 2 -o majorityvote_k2_m2_t10_2 -d physical+rescue_triangular_matrix -r physical+rescue.level3random -m 2 -t 10
+
+the only thing to do is change the name after -o. you can change the last _2 to a _3.. etc
+
+4) python2.7 ../../../../majorityvote/CalculatePerformance.py physical+rescue.level3annotation DSDWeightedmajorityvote_k2_m2_t10_2 
+
+make sure you change _2 to the number you're using
