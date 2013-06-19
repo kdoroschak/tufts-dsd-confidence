@@ -63,61 +63,44 @@ def extract_trimat(dsd_matrix, indices):
     p_count = len(indices)
 
     # Create two-dimensional, triangular matrix.
+    print "    Initializing triangular matrix."
     trimat = []
     for row in xrange(p_count-1):
         trimat.append([])
         for col in xrange(p_count-row):
             trimat[row].append(None)
 
+    count = 0
+    total = p_count * (p_count + 1) / 2
+
     # Loop through the upper triangle of the dsd matrix.
+    print "    Populating triangular matrix."
     for row in xrange(p_count-1):
+        # Status report
+        #temp = "    " + str(count) + "/"
+        #temp += str(total) + " DSD values placed."
+        #print temp
+
         row_index = indices[dsd_matrix[row+1][0]]
         for col in xrange(row+1, p_count):
-            print p_count
             dsd = dsd_matrix[row+1][col+1]
             col_index = indices[dsd_matrix[0][col+1]]
-            trimat[row_index][col_index-row_index-1] = dsd
+            low_index = min(row_index, col_index)
+            high_index = max(row_index, col_index)
+            trimat[low_index][high_index-low_index-1] = dsd
+            count += 1
 
     return trimat
 
-'''
-def extract_matrix(infile, indices):
-    p_count = len(indices)
-
-    # Create two-dimensional, triangular matrix.
-    matrix = []
-
-    for row in xrange(p_count-1):
-        matrix.append([])
-        for col in xrange(p_count-row-1):
-            matrix[row].append(None)
-
-    count = 0
-
-    # Read in DSD value and two proteins, mapping to matrix
-    for line in infile:
-        count += 1
-        # Split line
-        cols = line.split('\t')
-
-        # Check for 'NotConnected'
-        if cols[2][0:-1] == 'NotConnected':
-            continue
-
-        # Extract indices and dsd float
-        indexA = indices[cols[0]]
-        indexB = indices[cols[1]]
-        dsd = float(cols[2][0:-1])
-
-        # Sort indices
-        row = min(indexA, indexB)
-        col = max(indexA, indexB)
-
-        # Store DSD value
-        matrix[row][col-row-1] = dsd
-
-    return matrix
-'''
+# Writes matrix to file
+def write_matrix(matrix_outfile, matrix):
+    for row in matrix:
+        line = []
+        for val in row:
+            line.append(str(val))
+        line = '\t'.join(line)
+        matrix_outfile.write(line)
+        matrix_outfile.write('\n')
 
 # **** Main *********************************************************
 def main():
@@ -149,19 +132,27 @@ def main():
     dsd_in = open_or_abort(dsd)
     plist_in = open_or_abort(plist)
     matrix_out = open_or_abort(matrix, option="w")
+    print "    Finished opening."
 
     # Create a dictionary pairing protein with index
     print "Generating protein order."
     indices = extract_proteins(plist_in)
+    print "    Finished generating."
 
     # Read matrix into memory
     print "Reading in DSD matrix."
     dsd_matrix = extract_matrix(dsd_in)
+    print "    Finished reading."
 
     # Extract triangular matrix from full matrix (in order)
     print "Extracting and ordering triangular matrix."
     trimat = extract_trimat(dsd_matrix, indices)
-    print trimat # Testing purposes
+    print "    Finished extracting."
+
+    # Write triangular matrix to file
+    print "Writing triangular matrix to file."
+    write_matrix(matrix_out, trimat)
+    print "    Finished writing matrix."
 
     # Close files
     dsd_in.close()

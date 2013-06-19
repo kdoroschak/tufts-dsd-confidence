@@ -48,12 +48,8 @@ def extract_proteins(infile):
 
     return proteins
 
-# extract_matrix(infile, indices)
-# Description: Creates the upper triangle of a matrix
+# Creates the upper triangle of a matrix
 #   representing DSD values.
-# Precondition: infile is a file containing tab separated
-#   nameA nameB DSD. indices is a dictionary with protein indices.
-# Postcondition: Returns the upper triangle of a matrix.
 def extract_matrix(infile, indices):
     p_count = len(indices)
 
@@ -91,12 +87,7 @@ def extract_matrix(infile, indices):
 
     return matrix
 
-
-# write_matrix(matrix_outfile, matrix)
-# Description: Writes matrix to file
-# Precondition: matrix_outfile is a file open for writing.
-#   matrix is a list of lists.
-# Postcondition: Writes matrix to matrix_outfile, tab separated.
+# Writes matrix to file
 def write_matrix(matrix_outfile, matrix):
     for row in matrix:
         line = []
@@ -105,7 +96,6 @@ def write_matrix(matrix_outfile, matrix):
         line = '\t'.join(line)
         matrix_outfile.write(line)
         matrix_outfile.write('\n')
-
 
 # **** Main *********************************************************
 def main():

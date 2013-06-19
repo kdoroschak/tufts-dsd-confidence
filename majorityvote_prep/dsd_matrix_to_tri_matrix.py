@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.7
+
 """ Takes in a DSD matrix and an output file and outputs the upper right triangle of that matrix
     above the upperleft-to-lowerright diagonal.
     The DSD matrix must be square, all DSD values must be separated by tabs
@@ -7,9 +9,10 @@
 
 import sys
 
-if len (sys.argv) >= 3:
+if len (sys.argv) >= 4:
     dsd_matrixf = open(sys.argv[1], 'r')
     tri_matrixf = open(sys.argv[2], 'w')
+    order_list = open(sys.argv[3], 'r')
 
     lines = dsd_matrixf.readlines()
 
