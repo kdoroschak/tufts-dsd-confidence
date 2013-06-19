@@ -1,0 +1,173 @@
+#!/usr/bin/env python2.7
+
+# make_ordered_trimat
+# Thomas Schaffner
+
+# *******************************************************************
+# Takes in a DSD matrix and an ordered list of protein names.
+# Extracts and outputs the upper triangle of the matrix, reordered
+# if necessary to be consistent with the order in the protein list.
+# *******************************************************************
+
+import sys
+import argparse
+
+# Functions *********************************************************
+
+# Opens filename with option or exits program if file doesn't open.
+def open_or_abort(filename, option=None):
+    try:
+        if option != None:
+            opened = open(filename, option)
+        else:
+            opened = open(filename)
+    except:
+        print "Could not open file", filename
+        exit()
+    return opened
+
+# Creates a dictionary which maps protein names to their indices.
+def extract_proteins(infile):
+    # Indexing from 0
+    count = 0
+    proteins = dict()
+
+    for line in infile:
+        protein = line[0:-1] #drop '\n'
+
+        proteins[protein] = count
+        count += 1
+
+    return proteins
+
+# Reads a DSD matrix and turns it into an array, returning it.
+def extract_matrix(infile):
+    matrix = []
+    row = 0
+
+    for line in infile:
+        matrix.append([])
+
+        elems = line.split('\t')
+        elems[-1] = elems[-1][0:-1] # Drop the '\n'
+
+        for elem in elems:
+            matrix[row].append(elem)
+
+        row += 1
+
+    return matrix
+
+# Extracts triangular matrix from DSD matrix, ordering by indices.
+def extract_trimat(dsd_matrix, indices):
+    p_count = len(indices)
+
+    # Create two-dimensional, triangular matrix.
+    trimat = []
+    for row in xrange(p_count-1):
+        trimat.append([])
+        for col in xrange(p_count-row):
+            trimat[row].append(None)
+
+    # Loop through the upper triangle of the dsd matrix.
+    for row in xrange(p_count-1):
+        row_index = indices[dsd_matrix[row+1][0]]
+        for col in xrange(row+1, p_count):
+            print p_count
+            dsd = dsd_matrix[row+1][col+1]
+            col_index = indices[dsd_matrix[0][col+1]]
+            trimat[row_index][col_index-row_index-1] = dsd
+
+    return trimat
+
+'''
+def extract_matrix(infile, indices):
+    p_count = len(indices)
+
+    # Create two-dimensional, triangular matrix.
+    matrix = []
+
+    for row in xrange(p_count-1):
+        matrix.append([])
+        for col in xrange(p_count-row-1):
+            matrix[row].append(None)
+
+    count = 0
+
+    # Read in DSD value and two proteins, mapping to matrix
+    for line in infile:
+        count += 1
+        # Split line
+        cols = line.split('\t')
+
+        # Check for 'NotConnected'
+        if cols[2][0:-1] == 'NotConnected':
+            continue
+
+        # Extract indices and dsd float
+        indexA = indices[cols[0]]
+        indexB = indices[cols[1]]
+        dsd = float(cols[2][0:-1])
+
+        # Sort indices
+        row = min(indexA, indexB)
+        col = max(indexA, indexB)
+
+        # Store DSD value
+        matrix[row][col-row-1] = dsd
+
+    return matrix
+'''
+
+# **** Main *********************************************************
+def main():
+    # Set up argument parser
+    temp = "Cross-references DSD matrix with ordered protein list."
+    temp += " Extracts upper triangle, in the list's order."
+    parser = argparse.ArgumentParser(description=temp)
+
+    parser.add_argument("-d", "--dsd", help="DSD matrix input file.",
+                        default=None)
+    parser.add_argument("-p", "--plist", help="Ordered list of"+
+                        " proteins input file.", default=None)
+    parser.add_argument("-m", "--matrix", help="Output file name.",
+                        default=None)
+
+    # Parse options
+    options = parser.parse_args()
+    dsd = options.dsd
+    plist = options.plist
+    matrix = options.matrix
+
+    # Check for sufficient arguments
+    if (dsd == None) or (plist == None) or (matrix == None):
+        print "Insufficient arguments."
+        exit()
+
+    # Try to open files
+    print "Opening files."
+    dsd_in = open_or_abort(dsd)
+    plist_in = open_or_abort(plist)
+    matrix_out = open_or_abort(matrix, option="w")
+
+    # Create a dictionary pairing protein with index
+    print "Generating protein order."
+    indices = extract_proteins(plist_in)
+
+    # Read matrix into memory
+    print "Reading in DSD matrix."
+    dsd_matrix = extract_matrix(dsd_in)
+
+    # Extract triangular matrix from full matrix (in order)
+    print "Extracting and ordering triangular matrix."
+    trimat = extract_trimat(dsd_matrix, indices)
+    print trimat # Testing purposes
+
+    # Close files
+    dsd_in.close()
+    plist_in.close()
+    matrix_out.close()
+
+# Call main
+if __name__ == "__main__":
+    main()

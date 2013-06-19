@@ -1,0 +1,116 @@
+#!/usr/bin/env python2.7
+
+# find_connected_list
+# Thomas Schaffner
+
+# *******************************************************************
+# Takes in DSD matrix and PPI list files. Outputs PPI list file only
+# for proteins in the largest connected graph.
+# *******************************************************************
+
+import sys
+import argparse
+
+# Functions *********************************************************
+
+# Opens filename with option or exits program if file doesn't open.
+def open_or_abort(filename, option=None):
+    try:
+        if option != None:
+            opened = open(filename, option)
+        else:
+            opened = open(filename)
+    except:
+        print "Could not open file", filename
+        exit()
+    return opened
+
+# Reads first line of DSD matrix file. Takes outputs python set of
+#   proteins in that line.
+def get_proteins(infile):
+    # Read first line
+    line = infile.readline()
+    proteins = line.split('\t')
+
+    # Create set of proteins
+    valid = set()
+    for protein in proteins:
+        if protein != "":
+            if protein[-1] == '\n':
+                protein = protein[0:-1]
+            valid.add(protein)
+
+    return valid
+
+# Reads lines from PPI input list. Saves lines where both proteins
+#   are in valid.
+def discard_disconnected(infile, valid):
+
+    protList = []
+    seen = set()
+
+    for line in infile:
+        cols = line.split(' ')
+        protA = cols[0]
+        protB = cols[1][0:-1]
+
+        if (protA in valid) and (protB in valid):
+            prots = [protA, protB]
+            prots.sort()
+            newLine = '\t'.join(prots)
+            newLine += '\n'
+            if not newLine in seen:
+                protList.append(newLine)
+                seen.add(newLine)
+
+    protList.sort()
+    return protList
+
+
+# **** Main *********************************************************
+def main():
+
+    # Set up argument parser
+    temp = "Cross references a DSD matrix with a PPI file."
+    temp += " Creates a PPI list for all proteins in DSD matrix."
+    parser = argparse.ArgumentParser(description=temp)
+
+    parser.add_argument("-d", "--dsd", help="DSD matrix input file.",
+                        default=None)
+    parser.add_argument("-p", "--plist", help="Ordered list of"+
+                        " proteins input file.", default=None)
+    parser.add_argument("-c", "--connected", help="Output file name.",
+                        default=None)
+
+    # Parse options
+    options = parser.parse_args()
+
+    # Ensure there are enough arguments
+    dsd = options.dsd
+    plist = options.plist
+    connected = options.connected
+
+    # Try to open files
+    print "Opening files."
+    dsd_in = open_or_abort(dsd)
+    plist_in = open_or_abort(plist)
+    plist_out = open_or_abort(connected, "w")
+
+    # Read in first line of DSD matrix to get list of valid proteins
+    print "Populating list of valid proteins."
+    valid = get_proteins(dsd_in)
+
+    # Write lines from PPI infile where both proteins are valid
+    print "Extracting valid PPIs."
+    valid_ppi = discard_disconnected(plist_in, valid)
+    print "Writing valid PPIs to file."
+    for newLine in valid_ppi:
+        plist_out.write(newLine)
+
+    # Close files
+    dsd_in.close()
+    plist_in.close()
+    plist_out.close()
+
+if __name__ == "__main__":
+    main()
