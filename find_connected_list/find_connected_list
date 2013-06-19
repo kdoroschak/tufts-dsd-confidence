@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 # find_connected_list
+# Thomas Schaffner
 
 # *******************************************************************
 # Takes in DSD matrix and PPI list files. Outputs PPI list file only
