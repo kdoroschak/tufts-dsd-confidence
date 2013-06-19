@@ -1,28 +1,26 @@
 #!/usr/bin/env python2.7
 
-import os, sys, getopt
+import os, sys, getopt, numpy
+
+def calculateNewScore(oldAvgScore, oldN, scoreToAdd):
+	newAvgScore = ((oldAvgScore * int(oldN)) + float(scoreToAdd)) / (int(oldN) + 1)
+	return newAvgScore
 
 def main(argv):
-	edgeDict = {}
 	dsdFiles = []
 	dsdPath = ''
 	outputFile = ''
+	masterMatrixFile = ''
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:")
+		opts, args = getopt.getopt(argv,"hi:o:m:")
 	except getopt.GetoptError:
 		print ''
 		print 'USAGE: ./DsdAverage <options>'
 		print 'Use -h for more information about options.'
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'USAGE: ./DsdAverage <options>'
-			print '  -h	Display this help message.'
-			print '  -i	Input path of DSD files to be averaged. All files in this directory will be averaged.'
-			print '  -o	Name + path of output files.'
-			print ''
-			print 'EXAMPLE: ./DsdAverage -i ~/Mint/MintNetworks -o ~/Mint/MintNetworks-averageDSD.txt'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -32,98 +30,80 @@ def main(argv):
 				print 'Error opening path to files.'
 		elif opt == '-o':
 			outputFile = arg
+		elif opt == '-m':
+			masterMatrixFile = arg
+	# Need: masterMatrixFile, dsdPath
 
+	# ===== CREATE MATRIX FRAMEWORK =====
+	# Read in header of original file
+	# Create matrix using all edges in header, initialized to 0
+	# Create map from label name -> index
+	masterMatrixFile = open(masterMatrixFile, 'r')
+	mapLabelToIdx = {}
+	i = 0
+	for line in masterMatrixFile:
+		if i > 0:
+			break
+		labels = line.split('\t')
+		numLabels = len(labels)
+		avgMatrixScores = numpy.zeros(shape=(numLabels, numLabels))
+		avgMatrixNumScores = numpy.zeros(shape=(numLabels, numLabels), dtype='int')
+		label_idx = 0
+		for label in labels:
+			mapLabelToIdx[label.strip()] = label_idx
+			label_idx += 1
+		i += 1
+			
+	# ===== POPULATE AVERAGE MATRIX =====
+	# Read each file to be averaged
 	print "Processing all files at " + dsdPath + "..."	
-	# Loop through DSD files and start populating with information.
 	for currentDsdFile in dsdFiles:
-		with open(dsdPath + "/" + currentDsdFile) as dsdFile:
-			for line in dsdFile:
-				cols = line.split('\t')
-				vertices = cols[0:2]
-				vertices.sort()
-				vertices = ','.join(vertices)
-				vertexValue = edgeDict.get(vertices)
-				if (vertexValue != None):
-					vertexValue.addDsdScore(cols[2])
-				else:
-					newEdge = Edge(cols[0:2])
-					newEdge.addDsdScore(cols[2].strip())
-					edgeDict[vertices] = newEdge
+		print "Processing DSD file"
+		mapIdxToLabel = {}
+		dsdFile = open(dsdPath + "/" + currentDsdFile)
+		print dsdPath + "/" + currentDsdFile
+		row_i = -1
+		for line in dsdFile:
+			# Create map from index -> label name
+			if row_i < 0:
+				labels = line.split('\t')
+				label_idx = 0
+				for label in labels:
+					mapIdxToLabel[label_idx] = label.strip()
+					label_idx += 1
+				row_i += 1
+				continue
 
-	# Once we've gone through all rows of all files, output the averages
-	print "Computing averages and writing to file " + outputFile + "..."
-	allValues = edgeDict.values()
-	outputFile = open(outputFile, 'w')
-	for value in allValues:
-		outputFile.write('\t'.join(['\t'.join(value.getVertices()), str(value.getAvgDsd())]) + '\n')
-		
-	outputFile.close()
+			# Split up line into individual positions
+			values = line.split('\t')
+			col_j = -1
+			for value in values:
+				if col_j < 0:
+					col_j += 1
+					continue
+				# Look up real coordinates in master matrix (row, col)
+				# (index -> label -> index)
+				label = mapIdxToLabel.get(row_i)
+				masterRow = mapLabelToIdx.get(label)
+				label = mapIdxToLabel.get(col_j)
+				masterCol = mapLabelToIdx.get(label)
+				
+				# Calculate new score and update avg matrix
+				scoreToAdd = value
+				oldScore = avgMatrixScores[masterRow, masterCol]
+				oldNumScores = avgMatrixNumScores[masterRow, masterCol]
+				newScore = calculateNewScore(oldScore, oldNumScores, scoreToAdd)
+				avgMatrixScores[masterRow, masterCol] = newScore
+				avgMatrixNumScores[masterRow, masterCol] = oldNumScores + 1
+				col_j += 1
+			row_i += 1
+			
+	# ===== WRITE AVERAGE MATRIX TO FILE =====
+	# Write matrix out to file in the exact order as master file
+	print "Matrix averaging completed. Writing results to file..."
+	numpy.savetxt('outputfile.txt', avgMatrixScores, delimiter='\t', newline='\n')
 	print "Done."
-
-class Edge:
-	vertices = []
-	dsdScores = []
-	notConnectedCount = 0
-	scoreCount = 0
 	
-	def getDsdScores(self):
-		return self.dsdScores
-	
-	def getVertices(self):
-		return self.vertices
-	
-	def getAvgDsd(self):
-		if (abs((self.notConnectedCount - len(self.dsdScores))) <= 5):
-			print self.vertices 
-			print self.notConnectedCount
-			print len(self.dsdScores)
-			print self.dsdScores
-
-		# Case 0: Self edge.
-		#         Return 0. Covers case when score is 'NotConnected'.
-		if (self.vertices[0] == self.vertices[1]):
-			return 0.0
-
-		# Case 1: All scores good, none indicating 'NotConnected', total# > 0.
-		#         Take average as normal.
-		elif (len(self.dsdScores) > 0) and (len(self.dsdScores) == self.scoreCount):
-			return sum(self.dsdScores) / len(self.dsdScores)
-		
-		# Case 2: All scores indicate 'NotConnected'.
-		#         Return 'NotConnected'.
-		elif (self.notConnectedCount == self.scoreCount):
-			return 'NotConnected'
-		
-		# Case 3: Mostly 'NotConnected', some scores too.
-		#         Return 'NotConnected'. &&&& Handling??
-		elif (self.notConnectedCount > len(self.dsdScores)):
-			print 'Mostly n/c:    ' + str(self.notConnectedCount) + ' NC, ' + str(len(self.dsdScores)) + ' scores'
-			return 'NotConnected'
-
-		# Case 4: Mostly scores, some 'NotConnected'
-		#         Return average of scores present. &&&& Handling??
-		else: # TODO &&&& Handle # scores in array <= 0
-			print 'Mostly scores: '+ str(self.notConnectedCount) + ' NC, ' + str(len(self.dsdScores)) + ' scores'
-			return sum(self.dsdScores) / len(self.dsdScores)
-
-	def addDsdScore(self, score):
-		self.scoreCount += 1
-		try:
-			scoreToAdd = float(score)
-			self.dsdScores.append(scoreToAdd)
-		except:
-			self.notConnectedCount += 1		
-
-	def setVertices(self, vert):
-		self.vertices = vert
-		self.vertices.sort()
-
-	def __init__(self, vert):
-		self.vertices = vert
-		self.vertices.sort()
-		self.dsdScores = []
-		self.notConnectedCount = 0
-		self.scoreCount = 0
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
