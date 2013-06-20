@@ -17,6 +17,8 @@ from collections import OrderedDict
     Tufts BCB
 '''
 
+NO_ANNOTATION = '99'
+
 def main():
 	parser = argparse.ArgumentParser(description='produce annotation matrix for yeast genes.')
 	parser.add_argument('funcat', metavar="funcat", help="MIPS funcat file")
@@ -119,7 +121,7 @@ def function_db(funcat, level):
 		if len(parts) != 5: print line
 		name = parts[0].upper() #### NOTICE: MADE ALL NAMES UPPERCASE TO MATCH WHAT"S IN MATRIX
 		fun_string = parts[1]
-		if fun_string.count('.') >= level-1:
+		if fun_string.count('.') >= level-1 and not fun_string.startswith(NO_ANNOTATION): #ignore 99 == noannotation.
 			cat_parts = fun_string.split('.')
 			cat = ".".join(cat_parts[:level])
 			if name in fun_dict:
