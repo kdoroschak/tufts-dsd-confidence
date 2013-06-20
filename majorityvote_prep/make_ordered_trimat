@@ -67,7 +67,7 @@ def extract_trimat(dsd_matrix, indices):
     trimat = []
     for row in xrange(p_count-1):
         trimat.append([])
-        for col in xrange(p_count-row):
+        for col in xrange(p_count-row-1):
             trimat[row].append(None)
 
     count = 0
@@ -75,11 +75,7 @@ def extract_trimat(dsd_matrix, indices):
 
     # Loop through the upper triangle of the dsd matrix.
     print "    Populating triangular matrix."
-    for row in xrange(p_count-1):
-        # Status report
-        #temp = "    " + str(count) + "/"
-        #temp += str(total) + " DSD values placed."
-        #print temp
+    for row in xrange(p_count):
 
         row_index = indices[dsd_matrix[row+1][0]]
         for col in xrange(row+1, p_count):
@@ -100,7 +96,8 @@ def write_matrix(matrix_outfile, matrix):
             line.append(str(val))
         line = '\t'.join(line)
         matrix_outfile.write(line)
-        matrix_outfile.write('\n')
+        matrix_outfile.write('\t\n')
+    matrix_outfile.write('\n')
 
 # **** Main *********************************************************
 def main():
