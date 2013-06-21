@@ -77,8 +77,8 @@ def main():
 
     parser.add_argument("-d", "--dsd", help="DSD matrix input file.",
                         default=None)
-    parser.add_argument("-p", "--plist", help="Ordered list of"+
-                        " proteins input file.", default=None)
+    parser.add_argument("-p", "--plist", help="PPI input file.",
+                        default=None)
     parser.add_argument("-c", "--connected", help="Output file name.",
                         default=None)
 
