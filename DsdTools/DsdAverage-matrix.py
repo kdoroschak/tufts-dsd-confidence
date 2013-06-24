@@ -1,10 +1,6 @@
 #!/usr/bin/env python2.7
 
-import os, sys, getopt, numpy
-
-def calculateNewScore(oldAvgScore, oldN, scoreToAdd):
-	newAvgScore = ((oldAvgScore * int(oldN)) + float(scoreToAdd)) / (int(oldN) + 1)
-	return newAvgScore
+import os, sys, getopt, numpy, time
 
 def main(argv):
 	dsdFiles = []
@@ -32,78 +28,90 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
-	# Need: masterMatrixFile, dsdPath
+
 
 	# ===== CREATE MATRIX FRAMEWORK =====
-	# Read in header of original file
-	# Create matrix using all edges in header, initialized to 0
-	# Create map from label name -> index
-	masterMatrixFile = open(masterMatrixFile, 'r')
-	mapLabelToIdx = {}
-	i = 0
-	for line in masterMatrixFile:
-		if i > 0:
-			break
-		labels = line.split('\t')
-		numLabels = len(labels)
-		avgMatrixScores = numpy.zeros(shape=(numLabels, numLabels))
-		avgMatrixNumScores = numpy.zeros(shape=(numLabels, numLabels), dtype='int')
-		label_idx = 0
-		for label in labels:
-			mapLabelToIdx[label.strip()] = label_idx
-			label_idx += 1
-		i += 1
-			
-	# ===== POPULATE AVERAGE MATRIX =====
-	# Read each file to be averaged
-	print "Processing all files at " + dsdPath + "..."	
-	for currentDsdFile in dsdFiles:
-		print "Processing DSD file"
-		mapIdxToLabel = {}
-		dsdFile = open(dsdPath + "/" + currentDsdFile)
-		print dsdPath + "/" + currentDsdFile
-		row_i = -1
-		for line in dsdFile:
-			# Create map from index -> label name
-			if row_i < 0:
-				labels = line.split('\t')
-				label_idx = 0
-				for label in labels:
-					mapIdxToLabel[label_idx] = label.strip()
-					label_idx += 1
-				row_i += 1
-				continue
-
-			# Split up line into individual positions
-			values = line.split('\t')
-			col_j = -1
-			for value in values:
-				if col_j < 0:
-					col_j += 1
-					continue
-				# Look up real coordinates in master matrix (row, col)
-				# (index -> label -> index)
-				label = mapIdxToLabel.get(row_i)
-				masterRow = mapLabelToIdx.get(label)
-				label = mapIdxToLabel.get(col_j)
-				masterCol = mapLabelToIdx.get(label)
-				
-				# Calculate new score and update avg matrix
-				scoreToAdd = value
-				oldScore = avgMatrixScores[masterRow, masterCol]
-				oldNumScores = avgMatrixNumScores[masterRow, masterCol]
-				newScore = calculateNewScore(oldScore, oldNumScores, scoreToAdd)
-				avgMatrixScores[masterRow, masterCol] = newScore
-				avgMatrixNumScores[masterRow, masterCol] = oldNumScores + 1
-				col_j += 1
-			row_i += 1
-			
-	# ===== WRITE AVERAGE MATRIX TO FILE =====
-	# Write matrix out to file in the exact order as master file
-	print "Matrix averaging completed. Writing results to file..."
-	numpy.savetxt('outputfile.txt', avgMatrixScores, delimiter='\t', newline='\n')
-	print "Done."
+	# Read in header of master file
+	with open(masterMatrixFile) as masterMatrix:
+		labels = masterMatrix.readline()
+	labels = labels.split('\t')[1:-1]
+	numLabels = len(labels)
 	
+	# Create map from label -> master index
+	mapLabelToIdx = {}
+	for label_idx in xrange(numLabels):
+		mapLabelToIdx[labels[label_idx].strip()] = label_idx
+
+	# Create matrices using all edges in header, initialized to 0
+	matrixTotalScores = numpy.zeros(shape=(numLabels, numLabels))
+	matrixNumScores   = numpy.zeros(shape=(numLabels, numLabels))
+
+
+	# ===== CALCULATE TOTAL SCORES AND COUNTS FOR ALL MATRICES =====
+	# Add each new element to total and count
+	
+	print "Processing all files at " + dsdPath + "..."
+	for currentDsdFile in dsdFiles:
+		dsdFileWithPath = dsdPath + "/" + currentDsdFile
+		print "Processing DSD file: " + dsdFileWithPath	
+		time_processfile = time.clock()
+		
+		# Read file to be averaged into numpy array
+		time_loadfile = time.clock()
+		with open(dsdFileWithPath) as dsdFile:
+			localLabels = dsdFile.readline().split('\t')[1:-1]		
+		numLocalLabels = len(localLabels)
+		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', skiprows=1, usecols=xrange(1,numLocalLabels))
+		print "Read file into numpy array:\t" + str(time.clock() - time_loadfile)
+
+		for index, score in numpy.ndenumerate(dsdMatrix):
+			if index[1] > index[0]: # for humans: col > row, upper triangle only
+				# Look up the position of each element in the master matrix
+				xMasterIdx = mapLabelToIdx[localLabels[index[0]]]
+				yMasterIdx = mapLabelToIdx[localLabels[index[1]]]
+
+				# Add each element to the master total and count
+				matrixTotalScores[xMasterIdx, yMasterIdx] += score
+				matrixNumScores[xMasterIdx, yMasterIdx] += 1
+
+		print "Process entire file:       \t" + str(time.clock() - time_processfile)
+	
+
+	# ===== CALCULATE AVERAGE SCORES =====		
+	print "Calculating average scores..."
+	time_averagescores = time.clock()
+	for index, score in numpy.ndenumerate(matrixTotalScores):
+		if index[1] > index[0]: # col > row, upper triangle only. diag = 0
+			index_t = (index[1], index[0])
+			numScores = matrixNumScores[index]
+			if numScores > 0:
+				averageScore = score / matrixNumScores[index]
+				matrixTotalScores[index]   = averageScore
+				matrixTotalScores[index_t] = averageScore
+			else:
+				matrixTotalScores[index] = 0
+	print "Average scores:            \t" + str(time.clock() - time_averagescores)
+	
+
+	# ===== WRITE RESULTS TO FILE =====
+	# TODO add labels when printing
+	print "Writing results to file..."
+	labels_row = numpy.array((labels), dtype='|S12')[numpy.newaxis]
+	matrixTotalScores = numpy.concatenate((labels_row, matrixTotalScores), 0)
+	labels_col = numpy.insert(labels_row, 0, " ")[numpy.newaxis].T
+	matrixTotalScores = numpy.concatenate((labels_col, matrixTotalScores), 1)
+
+	with open(outputFile, 'w') as outFile:
+		for row in matrixTotalScores:
+			outFile.write('\t'.join(row))
+			outFile.write('\n')		
+
+
+#numpy.savetxt(outputFile, matrixTotalScores, delimiter='\t', newline='\n')
+#	print "(jk, not implemented yet)"
+
+
+	print "Done."		
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
