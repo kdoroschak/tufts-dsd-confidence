@@ -34,7 +34,8 @@ def main(argv):
 	# Read in header of master file
 	with open(masterMatrixFile) as masterMatrix:
 		labels = masterMatrix.readline()
-	labels = labels.split('\t')[1:-1]
+		print '{' + labels[0] + '}'
+	labels = labels.split('\t')[1:]
 	numLabels = len(labels)
 	
 	# Create map from label -> master index
@@ -49,19 +50,21 @@ def main(argv):
 
 	# ===== CALCULATE TOTAL SCORES AND COUNTS FOR ALL MATRICES =====
 	# Add each new element to total and count
-	
+	dsdFiles.sort()
+	numDsdFiles = len(dsdFiles)	
 	print "Processing all files at " + dsdPath + "..."
+	currentCount = 1
 	for currentDsdFile in dsdFiles:
 		dsdFileWithPath = dsdPath + "/" + currentDsdFile
-		print "Processing DSD file: " + dsdFileWithPath	
+		print "Processing DSD file " + str(currentCount) + "/" + str(numDsdFiles) + ": " + dsdFileWithPath	
 		time_processfile = time.clock()
 		
 		# Read file to be averaged into numpy array
 		time_loadfile = time.clock()
 		with open(dsdFileWithPath) as dsdFile:
-			localLabels = dsdFile.readline().split('\t')[1:-1]		
+			localLabels = dsdFile.readline().split('\t')[1:]		
 		numLocalLabels = len(localLabels)
-		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', skiprows=1, usecols=xrange(1,numLocalLabels))
+		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', skiprows=1, usecols=xrange(1,numLocalLabels)) # TODO this may be a bug, cutting off last column!
 		print "Read file into numpy array:\t" + str(time.clock() - time_loadfile)
 
 		for index, score in numpy.ndenumerate(dsdMatrix):
@@ -89,12 +92,11 @@ def main(argv):
 				matrixTotalScores[index]   = averageScore
 				matrixTotalScores[index_t] = averageScore
 			else:
-				matrixTotalScores[index] = 0
+				matrixTotalScores[index] = 999 # sentinel value, effectively +inf in this case
 	print "Average scores:            \t" + str(time.clock() - time_averagescores)
 	
 
 	# ===== WRITE RESULTS TO FILE =====
-	# TODO add labels when printing
 	print "Writing results to file..."
 	labels_row = numpy.array((labels), dtype='|S12')[numpy.newaxis]
 	matrixTotalScores = numpy.concatenate((labels_row, matrixTotalScores), 0)
