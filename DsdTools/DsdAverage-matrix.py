@@ -17,6 +17,9 @@ def main(argv):
 		print 'Use -h for more information about options.'
 	for opt, arg in opts:
 		if opt == '-h':
+			print '-i  directory containing dsd files to be averaged'
+			print '-o  name of output (averaged) file'
+			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -34,8 +37,8 @@ def main(argv):
 	# Read in header of master file
 	with open(masterMatrixFile) as masterMatrix:
 		labels = masterMatrix.readline()
-		print '{' + labels[0] + '}'
 	labels = labels.split('\t')[1:]
+	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
 	
 	# Create map from label -> master index
@@ -62,22 +65,24 @@ def main(argv):
 		# Read file to be averaged into numpy array
 		time_loadfile = time.clock()
 		with open(dsdFileWithPath) as dsdFile:
-			localLabels = dsdFile.readline().split('\t')[1:]		
+			localLabels = dsdFile.readline().split('\t')[1:]
+			[label.strip() for label in localLabels]
 		numLocalLabels = len(localLabels)
-		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', skiprows=1, usecols=xrange(1,numLocalLabels)) # TODO this may be a bug, cutting off last column!
-		print "Read file into numpy array:\t" + str(time.clock() - time_loadfile)
+		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1)
+		print "  Time to read file into numpy array:\t" + str(time.clock() - time_loadfile)
 
 		for index, score in numpy.ndenumerate(dsdMatrix):
 			if index[1] > index[0]: # for humans: col > row, upper triangle only
 				# Look up the position of each element in the master matrix
-				xMasterIdx = mapLabelToIdx[localLabels[index[0]]]
-				yMasterIdx = mapLabelToIdx[localLabels[index[1]]]
+				xMasterIdx = mapLabelToIdx[localLabels[index[0]].strip()]
+				yMasterIdx = mapLabelToIdx[localLabels[index[1]].strip()]
 
 				# Add each element to the master total and count
 				matrixTotalScores[xMasterIdx, yMasterIdx] += score
 				matrixNumScores[xMasterIdx, yMasterIdx] += 1
 
-		print "Process entire file:       \t" + str(time.clock() - time_processfile)
+		print "  Time to process entire file:       \t" + str(time.clock() - time_processfile)
+		currentCount += 1
 	
 
 	# ===== CALCULATE AVERAGE SCORES =====		
@@ -92,8 +97,8 @@ def main(argv):
 				matrixTotalScores[index]   = averageScore
 				matrixTotalScores[index_t] = averageScore
 			else:
-				matrixTotalScores[index] = 999 # sentinel value, effectively +inf in this case
-	print "Average scores:            \t" + str(time.clock() - time_averagescores)
+				matrixTotalScores[index] = 999.9 # sentinel value, effectively +inf in this case
+	print "  Time to average scores:            \t" + str(time.clock() - time_averagescores)
 	
 
 	# ===== WRITE RESULTS TO FILE =====
@@ -107,11 +112,6 @@ def main(argv):
 		for row in matrixTotalScores:
 			outFile.write('\t'.join(row))
 			outFile.write('\n')		
-
-
-#numpy.savetxt(outputFile, matrixTotalScores, delimiter='\t', newline='\n')
-#	print "(jk, not implemented yet)"
-
 
 	print "Done."		
 
