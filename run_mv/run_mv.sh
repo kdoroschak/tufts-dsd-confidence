@@ -223,7 +223,7 @@ then
     failed=true
 fi
 
-if [[ $mips = "" && $ann = "" && $rand = "" ]]
+if [[ $mips = "" && $annpath = "" ]]
 then
     echo "Error: MIPS not specified."
     failed=true
