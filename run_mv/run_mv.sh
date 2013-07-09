@@ -301,13 +301,10 @@ then
 fi
 
 # Run majority vote, setting mv to output.
-if [[ $annpath = "" ]]
-then
-    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips1.ann -r ${annpath}.mips1.ann.rand -k 2 -o _${name}.mips1.mv -d ${trimat} -t 10 -m 2 ${adj}
-    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips2.ann -r ${annpath}.mips2.ann.rand -k 2 -o _${name}.mips2.mv -d ${trimat} -t 10 -m 2 ${adj}
-    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips3.ann -r ${annpath}.mips3.ann.rand -k 2 -o _${name}.mips3.mv -d ${trimat} -t 10 -m 2 ${adj}
-    mv DSDWeighted_${name}.* ${odir}
-fi
+python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips1.ann -r ${annpath}.mips1.ann.rand -k 2 -o _${name}.mips1.mv -d ${trimat} -t 10 -m 2 ${adj}
+python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips2.ann -r ${annpath}.mips2.ann.rand -k 2 -o _${name}.mips2.mv -d ${trimat} -t 10 -m 2 ${adj}
+python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips3.ann -r ${annpath}.mips3.ann.rand -k 2 -o _${name}.mips3.mv -d ${trimat} -t 10 -m 2 ${adj}
+mv DSDWeighted_${name}.* ${odir}
 
 # Run CalculatePerformance
 # Output to some file somewhere.
