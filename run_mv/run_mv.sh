@@ -5,15 +5,9 @@ function usage
     echo ""
     echo "      Minimum input is: PPI file and MIPS file with"
     echo "      either a DSD file or a path to DSD. Will run all"
-    echo "      necessary scripts to produce a confidence score,"
-    echo "      or whatever output is specified. Can optionally"
-    echo "      save all intermediate files in output directory,"
-    echo "      but will otherwise only save whatever the final"
-    echo "      step is that the user specifies."
+    echo "      necessary scripts to produce a confidence score."
     echo ""
     echo "-h / --help: Display this help message and exit."
-    echo ""
-    echo "-i / --inter: Boolean, saves intermediate files."
     echo ""
     echo "-p PPI / --ppi PPI: PPI is a PPI input file. This should"
     echo "                    be the file that the DSD was run on."
@@ -30,8 +24,17 @@ function usage
     echo "                    REQUIRED."
     echo ""
     echo "-m MIPS / --mips MIPS: MIPS annotations input file."
-    echo "                    REQUIRED IF annotation or"
-    echo "                    permutation files not specified."
+    echo "                    REQUIRED IF no path for annotations"
+    echo "                    and random permuations directory."
+    echo ""
+    echo "-ap ANNPATH / --annpath ANNPATH: Path to annotations and"
+    echo "                    random permutations directory. Also"
+    echo "                    includes everything in the file"
+    echo "                    names before '.mipsX.ann[.rand]'."
+    echo "                    File names must be identical before"
+    echo "                    '.mipsX.ann[.rand]' and must have"
+    echo "                    suffixes in that format."
+    echo "                    REQUIRED IF no MIPS file specified."
     echo ""
     echo "-ad ADJ / --adj ADJ: Adjacency matrix for largest"
     echo "                    connected portion of the network."
@@ -39,6 +42,7 @@ function usage
     echo "                    [optional]"
     echo ""
     echo "-t TMAT / --tmat TMAT: Triangular DSD matrix."
+    echo "                    [optional]"
     echo ""
     echo "-n NAME / --name NAME: Start of file name that you want"
     echo "                    to be in all output file names."
@@ -47,6 +51,7 @@ function usage
     echo ""
     echo "-o ODIR / --odir ODIR: Path to output directory."
     echo "                    Defaults to current directory."
+    echo "                    [optional]"
     echo ""
     echo "-cp CPPI / --cppi CPPI: Connected protein list."
     echo "                    Used to start later in the process."
@@ -59,8 +64,6 @@ function usage
     echo "---------------------------------------------------------"
 }
 
-inter=$false
-
 while :
 do
     case $1 in
@@ -68,8 +71,6 @@ do
             usage
             exit 0
             ;;
-        -i | --inter)
-            inter=$true;;
         -p | --ppi)
             if [ $2 ]
             then
@@ -88,6 +89,16 @@ do
                 shift 2
             else
                 echo "No argument for -d/--dsd. Ignoring."
+                shift
+            fi
+            ;;
+        -ap | --annpath)
+            if [ $2 ]
+            then
+                annpath=$2
+                shift 2
+            else
+                echo "No argument for -ap/--annpath. Ignoring."
                 shift
             fi
             ;;
@@ -251,44 +262,57 @@ fi
 if [[ $dsd = "" ]]
 then
     # Run DSD, setting $dsd to the output.
-    python2.7 "${dpath}/DSDmain.py" -m 1 -o "${odir}/${name}.DSD1" "${ppi}"
-    dsd="${odir}/${name}"
+    dsd="${odir}/${name}.DSD1"
+    python2.7 ${dpath}/DSDmain.py -m 1 -o ${dsd} ${ppi}
 fi
 
 # Find connected PPI
 if [[ $cppi = "" ]]
 then
     # Run find_connected_list, setting cppi to output
-    ./find_connected_list -d "${dsd}" -p "${ppi}" -c "${odir}/${name}_connected.ppi"
     cppi="${odir}/${name}_connected.ppi"
+    ./find_connected_list -d ${dsd} -p ${ppi} -c ${cppi}
 fi
 
 # Find adjacency matrix
 if [[ $adj = "" || $oprot = "" ]]
 then
     # Run GetAdjacency, setting adj and oprot to output
-    adj="Placeholder for adjacency matrix."
-    oprot="Placeholdr for ordered protein list."
+    adj="${odir}/${name}_connected.adj"
+    oprot="${odir}/${name}_connected_ordered.protein"
+    python2.7 getadjacency.py -p ${cppi} -m ${adj} -o ${oprot}
 fi
 
-# Find annotations and create permutation file.
-if [[ $ann = "" || $rand = "" ]]
+# Run funannotate, setting ann and rand to output
+if [[ $annpath = "" ]]
 then
-    # Run funannotate, setting ann and rand to output
-    ann="Placeholder for annotation file."
-    rand="Placeholder for permutation file."
+    annpath="${odir}/${name}_connected_ordered"
+    ./funannotate.py ${mips} ${oprot} -l 1 -o ${annpath}.mips1.ann -p ${annpath}.mips1.ann.rand
+    ./funannotate.py ${mips} ${oprot} -l 2 -o ${annpath}.mips2.ann -p ${annpath}.mips2.ann.rand
+    ./funannotate.py ${mips} ${oprot} -l 3 -o ${annpath}.mips3.ann -p ${annpath}.mips3.ann.rand
 fi
 
 # Find the triangular DSD matrix.
 if [[ $trimat = "" ]]
 then
     # Run make_ordered_trimat, setting trimat to output
-    trimat="Placeholder for trimat file."
+    trimat="${odir}/${name}.dsd1.trimat"
+    ./make_ordered_trimat -d ${dsd} -p ${oprot} -m ${trimat}
 fi
 
 # Run majority vote, setting mv to output.
-mv="Placeholder for MV."
+if [[ $annpath = "" ]]
+then
+    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips1.ann -r ${annpath}.mips1.ann.rand -k 2 -o _${name}.mips1.mv -d ${trimat} -t 10 -m 2 ${adj}
+    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips2.ann -r ${annpath}.mips2.ann.rand -k 2 -o _${name}.mips2.mv -d ${trimat} -t 10 -m 2 ${adj}
+    python2.7 ${mvpath}/DSDmv.py -l ${annpath}.mips3.ann -r ${annpath}.mips3.ann.rand -k 2 -o _${name}.mips3.mv -d ${trimat} -t 10 -m 2 ${adj}
+    mv DSDWeighted_${name}.* ${odir}
+fi
 
 # Run CalculatePerformance
 # Output to some file somewhere.
-echo "Wrote performance score to w/e file for all 3 levels."
+python2.7 ${mvpath}/CalculatePerformance.py ${annpath}.mips1.ann ${odir}/DSDWeighted_${name}.mips1.mv > "${odir}/${name}.mips1.perf"
+python2.7 ${mvpath}/CalculatePerformance.py ${annpath}.mips2.ann ${odir}/DSDWeighted_${name}.mips2.mv > "${odir}/${name}.mips2.perf"
+python2.7 ${mvpath}/CalculatePerformance.py ${annpath}.mips3.ann ${odir}/DSDWeighted_${name}.mips3.mv > "${odir}/${name}.mips3.perf"
+
+echo "Wrote performance score to output directory for all 3 MIPS levels."
