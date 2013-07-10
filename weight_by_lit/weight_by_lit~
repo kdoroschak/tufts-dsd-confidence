@@ -1,0 +1,14 @@
+#!/usr/bin/env python2.7
+
+pubname = "biogrid_ppi_nom.pub"
+countname = "biogrid_ppi_interactinos_per_pub.count"
+confname = "biogrid_ppi_nom.conf"
+
+pubinfile = open(pubname, 'r')
+countinfile = open(countname, 'r')
+confoutfile = open(confname, 'w')
+
+thresh = eval(raw_input("Threshold: "))
+
+for line in countinfile:
+	

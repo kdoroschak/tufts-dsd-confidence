@@ -1,0 +1,91 @@
+#!/usr/bin/env python2.7
+
+def locount_to_score(locount):
+    if locount == 1:
+        return .8
+    elif locount == 2:
+        return .9
+    elif locount > 2:
+        return .95
+    else:
+        return 0
+
+def hicount_to_score(hicount):
+    if hicount == 1:
+        return .25
+    elif hicount == 2:
+        return .5
+    elif hicount == 3:
+        return .75
+    elif hicount > 3:
+        return .85
+    else:
+        return 0
+
+def main():
+    pubname = "biogrid_ppi_nom.pub"
+    countname = "biogrid_ppi_interactions_per_pub.count"
+    confname = "biogrid_ppi_nom.t70.conf"
+
+    pubinfile = open(pubname, 'r')
+    countinfile = open(countname, 'r')
+    confoutfile = open(confname, 'w')
+
+    thresh = eval(raw_input("Threshold: "))
+
+    pubcounts = {}
+    hicount = {}
+    hicountset = set()
+    locount = {}
+    locountset = set()
+    nameset = set()
+
+    for line in countinfile:
+        cols = line.split('\t')
+        pub = cols[0]
+        count = cols[1][:-1]
+        pubcounts[pub] = count
+
+    for line in pubinfile:
+        cols = line.split('\t')
+        nameA = cols[0]
+        nameB = cols[1]
+        nameslist = [nameA, nameB]
+        nameslist.sort()
+        names = (nameslist[0], nameslist[1])
+        pub = cols[2][:-1]
+        if int(pubcounts[pub]) > thresh:
+            if names in hicountset:
+                hicount[names] += 1
+            else:
+                hicountset.add(names)
+                hicount[names] = 1
+        else:
+            if names in locountset:
+                locount[names] += 1
+            else:
+                locountset.add(names)
+                locount[names] = 1
+
+        if not names in nameset:
+            nameset.add(names)
+
+    for names in nameset:
+        if names in hicountset:
+            hiscore = hicount_to_score(int(hicount[names]))
+        else:
+            hiscore = 0
+        if names in locountset:
+            loscore = locount_to_score(int(locount[names]))
+        else:
+            loscore = 0
+        score = max(loscore, hiscore)
+
+        names = '\t'.join(names)
+        confoutfile.write(names)
+        confoutfile.write('\t')
+        confoutfile.write(str(score))
+        confoutfile.write('\n')
+
+if __name__ == "__main__":
+    main() 
