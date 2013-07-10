@@ -23,6 +23,7 @@ def main(argv):
 			print '-i  directory containing dsd files to be averaged'
 			print '-o  name of output (averaged) file'
 			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
+			print '-b  bisect mode. 0 to bisect along original DSD. 1 for most extreme 1/4. 2 for 3/4.'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -35,7 +36,8 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
-
+		elif opt == '-b':
+			bisectMode = arg
 
 	time_entireprogram = time.clock()
 	# ===== CREATE MATRIX FRAMEWORK =====
@@ -127,16 +129,26 @@ def main(argv):
 					numHigherScores = numScores - numLowerScores
 					print str(dsdScores[:numLowerScores]) + " < " + str(originalDsdScore) + " < " + str(dsdScores[numLowerScores:])
 
+					if bisectMode == 0:
+						upperPartition = numHigherScores
+						lowerPartition = numLowerScores
+					elif bisectMode == 1:
+						upperPartition = numHigherScores/2
+						lowerPartition = numLowerScores/2
+					elif bisectMode == 2:
+						upperPartition = (numHigherScores + (numLowerScores / 2))
+						lowerPartition = (numLowerScores + (numHigherScores / 2))
+
 					# More scores > original
 					if numHigherScores > numLowerScores:
-						topDsdScores = dsdScores[:numHigherScores]
+						topDsdScores = dsdScores[:upperPartition]
 						topAverage = sum(topDsdScores)/len(topDsdScores)
 						matrixAverageScores[row_i, col_j] = topAverage
 						matrixAverageScores[col_j, row_i] = topAverage
 
 					# More scores < original
 					if numHigherScores < numLowerScores:
-						bottomDsdScores = dsdScores[numHigherScores:]
+						bottomDsdScores = dsdScores[(numScores - lowerPartition):]
 						bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
 						matrixAverageScores[row_i, col_j] = bottomAverage
 						matrixAverageScores[col_j, row_i] = bottomAverage
