@@ -24,6 +24,7 @@ def main(argv):
 			print '-i  directory containing dsd files to be averaged'
 			print '-o  name of output (averaged) file'
 			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
+			print '-b  bisect mode. 0 for half, 1 for most extreme 1/4, 2 for 3/4.'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -116,6 +117,13 @@ def main(argv):
 				dsdScores = filter(None, sorted(allDsds[row_i][col_j][:], reverse=True))
 				numScores = len(dsdScores)
 				
+				if bisectMode == 0:
+					partition = numScores
+				elif bisectMode == 1:
+					partition = numScores / 4
+				elif bisectMode == 2:
+					partition = numScores * 3 / 4
+				
 				if numScores > 0:
 					cutoffIdx = int(numScores * float(threshold)) + 1 # +1 to get ceiling
 					
@@ -135,11 +143,13 @@ def main(argv):
 					
 					# Select farther DSD average from original DSD score
 					if (topAverage - originalDsdScore) >= (originalDsdScore - bottomAverage):
-						matrixAverageScores[row_i, col_j] = topAverage
-						matrixAverageScores[col_j, row_i] = topAverage
+						newAvg = sum(dsdScores[:partition])/len(dsdScores[:partition])
+						matrixAverageScores[row_i, col_j] = newAvg
+						matrixAverageScores[col_j, row_i] = newAvg
 					else:
-						matrixAverageScores[row_i, col_j] = bottomAverage
-						matrixAverageScores[col_j, row_i] = bottomAverage
+						newAvg = sum(dsdScores[partition:])/len(dsdScores[partition:])
+						matrixAverageScores[row_i, col_j] = newAvg
+						matrixAverageScores[col_j, row_i] = newAvg
 				else:
 					matrixAverageScores[row_i, col_j] = 999.9
 					matrixAverageScores[col_j, row_i] = 999.9
