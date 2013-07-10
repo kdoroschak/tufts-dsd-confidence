@@ -64,6 +64,12 @@ function usage
     echo "---------------------------------------------------------"
 }
 
+function quit {
+	exit
+}
+
+trap quit SIGINT
+
 while :
 do
     case $1 in
