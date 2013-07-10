@@ -6,25 +6,24 @@ import os, sys, getopt, numpy, time
 
 def main(argv):
 	dsdFiles = []
-	dsdPath = ''
+	dsdPath = 'Please specify a path to the input files using -i'
 	numDsdFiles = 0
-	outputFile = ''
-	masterMatrixFile = ''
-	threshold = 1
+	outputFile = 'Please specify an output file using -o'
+	masterMatrixFile = 'Please specify a master matrix file using -m'
+	threshold = 0.5
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:t:")
+		opts, args = getopt.getopt(argv,"hi:o:m:")
 	except getopt.GetoptError:
 		print ''
-		print 'USAGE: ./DsdAverage-matrix-threshold.py <options>'
+		print 'USAGE: ./DsdAverage-matrix-maxtopandbottom.py <options>'
 		print 'Use -h for more information about options.'
 	for opt, arg in opts:
 		if opt == '-h':
 			print '-i  directory containing dsd files to be averaged'
 			print '-o  name of output (averaged) file'
 			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
-			print '-t  threshold value from 0 to 1 of top t% to use in output'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -37,13 +36,6 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
-		elif opt == '-t':
-			threshold = float(arg)
-
-	if threshold > 1 or threshold < 0:
-		print "Please specify threshold using -t. Value should be from 0 to 1."
-		exit()
-
 
 	time_entireprogram = time.clock()
 	# ===== CREATE MATRIX FRAMEWORK =====
@@ -53,7 +45,8 @@ def main(argv):
 	labels = labels.split('\t')[1:]
 	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
-	
+	masterMatrix = numpy.loadtxt(masterMatrixFile, delimiter='\t', usecols=xrange(1,numLabels+1), skiprows=1)
+		
 	# Create map from label -> master index
 	mapLabelToIdx = {}
 	for label_idx in xrange(numLabels):
@@ -94,6 +87,7 @@ def main(argv):
 					allDsds[xMasterIdx, yMasterIdx, currentCount] = score
 					
 		print "  Time to line up protein labels:     " + str(time.clock() - time_lineupfile)
+
 #		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1)
 #		print "  Time to read file into numpy array: " + str(time.clock() - time_loadfile)
 
@@ -124,10 +118,28 @@ def main(argv):
 				
 				if numScores > 0:
 					cutoffIdx = int(numScores * float(threshold)) + 1 # +1 to get ceiling
-					dsdScores = dsdScores[:cutoffIdx]
-					average = sum(dsdScores)/cutoffIdx
-					matrixAverageScores[row_i, col_j] = average
-					matrixAverageScores[col_j, row_i] = average
+					
+					# Original DSD score
+					originalDsdScore = masterMatrix[row_i][col_j]
+
+					# Avg of top 50% DSD scores
+					topDsdScores = dsdScores[:cutoffIdx]
+					topAverage = sum(topDsdScores)/len(topDsdScores)
+
+					# Avg of bottom 50% DSD scores
+					if cutoffIdx < numScores:
+						bottomDsdScores = dsdScores[cutoffIdx:]
+					else:
+						bottomDsdScores = [topAverage]
+					bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
+					
+					# Select farther DSD average from original DSD score
+					if (topAverage - originalDsdScore) >= (originalDsdScore - bottomAverage):
+						matrixAverageScores[row_i, col_j] = topAverage
+						matrixAverageScores[col_j, row_i] = topAverage
+					else:
+						matrixAverageScores[row_i, col_j] = bottomAverage
+						matrixAverageScores[col_j, row_i] = bottomAverage
 				else:
 					matrixAverageScores[row_i, col_j] = 999.9
 					matrixAverageScores[col_j, row_i] = 999.9

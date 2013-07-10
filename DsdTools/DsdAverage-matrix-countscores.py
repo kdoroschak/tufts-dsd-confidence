@@ -2,29 +2,27 @@
 
 # Huge memory requirement, must be run on a server like pulsar or meteor.
 
-import os, sys, getopt, numpy, time
+import os, sys, getopt, numpy, time, bisect
 
 def main(argv):
 	dsdFiles = []
-	dsdPath = ''
+	dsdPath = 'Please specify a path to the input files using -i'
 	numDsdFiles = 0
-	outputFile = ''
-	masterMatrixFile = ''
-	threshold = 1
+	outputFile = 'Please specify an output file using -o'
+	masterMatrixFile = 'Please specify a master matrix file using -m'
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:t:")
+		opts, args = getopt.getopt(argv,"hi:o:m:")
 	except getopt.GetoptError:
 		print ''
-		print 'USAGE: ./DsdAverage-matrix-threshold.py <options>'
+		print 'USAGE: ./DsdAverage-matrix-maxtopandbottom.py <options>'
 		print 'Use -h for more information about options.'
 	for opt, arg in opts:
 		if opt == '-h':
 			print '-i  directory containing dsd files to be averaged'
 			print '-o  name of output (averaged) file'
 			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
-			print '-t  threshold value from 0 to 1 of top t% to use in output'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -37,12 +35,6 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
-		elif opt == '-t':
-			threshold = float(arg)
-
-	if threshold > 1 or threshold < 0:
-		print "Please specify threshold using -t. Value should be from 0 to 1."
-		exit()
 
 
 	time_entireprogram = time.clock()
@@ -53,6 +45,7 @@ def main(argv):
 	labels = labels.split('\t')[1:]
 	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
+	masterMatrix = numpy.loadtxt(masterMatrixFile, delimiter='\t', usecols=xrange(1,numLabels+1), skiprows=1)
 	
 	# Create map from label -> master index
 	mapLabelToIdx = {}
@@ -94,6 +87,7 @@ def main(argv):
 					allDsds[xMasterIdx, yMasterIdx, currentCount] = score
 					
 		print "  Time to line up protein labels:     " + str(time.clock() - time_lineupfile)
+
 #		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1)
 #		print "  Time to read file into numpy array: " + str(time.clock() - time_loadfile)
 
@@ -105,7 +99,7 @@ def main(argv):
 #
 #				# Add each element to the giant matrix of all DSDs
 #				allDsds[xMasterIdx, yMasterIdx, currentCount] = float(score)
-
+#
 		print "  Time to process entire file:        " + str(time.clock() - time_processfile)
 		currentCount += 1
 
@@ -119,15 +113,39 @@ def main(argv):
 			if col_j == row_i: # diagonal
 				matrixAverageScores[row_i, col_j] = 0.0
 			if col_j > row_i: # upper triangle
-				dsdScores = filter(None, sorted(allDsds[row_i][col_j][:], reverse=True))
+				# dsdScores sorted !!!!!!!!!!!!! LOW TO HIGH !!!!!!!!!!!!!!!!
+				dsdScores = filter(None, sorted(allDsds[row_i][col_j][:]))
 				numScores = len(dsdScores)
 				
 				if numScores > 0:
-					cutoffIdx = int(numScores * float(threshold)) + 1 # +1 to get ceiling
-					dsdScores = dsdScores[:cutoffIdx]
-					average = sum(dsdScores)/cutoffIdx
-					matrixAverageScores[row_i, col_j] = average
-					matrixAverageScores[col_j, row_i] = average
+					# Avg of all DSD scores
+					fullAverage = sum(dsdScores)/numScores
+					originalDsdScore = masterMatrix[row_i][col_j]
+
+					#numHigherScores = bisect.bisect(dsdScores, fullAverage)
+					numLowerScores = bisect.bisect(dsdScores, originalDsdScore)
+					numHigherScores = numScores - numLowerScores
+					print str(dsdScores[:numLowerScores]) + " < " + str(originalDsdScore) + " < " + str(dsdScores[numLowerScores:])
+
+					# More scores > original
+					if numHigherScores > numLowerScores:
+						topDsdScores = dsdScores[:numHigherScores]
+						topAverage = sum(topDsdScores)/len(topDsdScores)
+						matrixAverageScores[row_i, col_j] = topAverage
+						matrixAverageScores[col_j, row_i] = topAverage
+
+					# More scores < original
+					if numHigherScores < numLowerScores:
+						bottomDsdScores = dsdScores[numHigherScores:]
+						bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
+						matrixAverageScores[row_i, col_j] = bottomAverage
+						matrixAverageScores[col_j, row_i] = bottomAverage
+					
+					# Equal scores > and < original, use regular average
+					else:
+						matrixAverageScores[row_i, col_j] = fullAverage
+						matrixAverageScores[col_j, row_i] = fullAverage
+
 				else:
 					matrixAverageScores[row_i, col_j] = 999.9
 					matrixAverageScores[col_j, row_i] = 999.9

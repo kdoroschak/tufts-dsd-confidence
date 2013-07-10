@@ -2,29 +2,28 @@
 
 # Huge memory requirement, must be run on a server like pulsar or meteor.
 
-import os, sys, getopt, numpy, time
+import os, sys, getopt, numpy, time, scipy.stats
 
 def main(argv):
 	dsdFiles = []
-	dsdPath = ''
+	dsdPath = 'Please specify a path to the input files using -i'
 	numDsdFiles = 0
-	outputFile = ''
-	masterMatrixFile = ''
-	threshold = 1
+	outputFile = 'Please specify an output file using -o'
+	masterMatrixFile = 'Please specify a master matrix file using -m'
+	threshold = 0.5
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:t:")
+		opts, args = getopt.getopt(argv,"hi:o:m:")
 	except getopt.GetoptError:
 		print ''
-		print 'USAGE: ./DsdAverage-matrix-threshold.py <options>'
+		print 'USAGE: ./DsdAverage-matrix-maxtopandbottom.py <options>'
 		print 'Use -h for more information about options.'
 	for opt, arg in opts:
 		if opt == '-h':
 			print '-i  directory containing dsd files to be averaged'
 			print '-o  name of output (averaged) file'
 			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
-			print '-t  threshold value from 0 to 1 of top t% to use in output'
 			sys.exit(1)
 		elif opt == '-i':
 			try:
@@ -37,12 +36,10 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
-		elif opt == '-t':
-			threshold = float(arg)
 
-	if threshold > 1 or threshold < 0:
-		print "Please specify threshold using -t. Value should be from 0 to 1."
-		exit()
+#	if threshold > 1 or threshold < 0:
+#		print "Please specify threshold using -t. Value should be from 0 to 1."
+#		exit()
 
 
 	time_entireprogram = time.clock()
@@ -53,7 +50,7 @@ def main(argv):
 	labels = labels.split('\t')[1:]
 	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
-	
+		
 	# Create map from label -> master index
 	mapLabelToIdx = {}
 	for label_idx in xrange(numLabels):
@@ -74,9 +71,9 @@ def main(argv):
 		
 		# Read file to be averaged into numpy array
 		time_loadfile = time.clock()
-		with open(dsdFileWithPath) as dsdFile:
-			localLabels = dsdFile.readline().split('\t')[1:]
-			localLabels = [label.strip() for label in localLabels]
+		dsdFile = open(dsdFileWithPath)
+		localLabels = dsdFile.readline().split('\t')[1:]
+		localLabels = [label.strip() for label in localLabels]
 		numLocalLabels = len(localLabels)
 
 		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1, dtype=float)
@@ -94,18 +91,6 @@ def main(argv):
 					allDsds[xMasterIdx, yMasterIdx, currentCount] = score
 					
 		print "  Time to line up protein labels:     " + str(time.clock() - time_lineupfile)
-#		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1)
-#		print "  Time to read file into numpy array: " + str(time.clock() - time_loadfile)
-
-#		for index, score in numpy.ndenumerate(dsdMatrix):
-#			if index[1] > index[0]: # for humans: col > row, upper triangle only
-#				# Look up the position of each element in the master matrix
-#				xMasterIdx = mapLabelToIdx[localLabels[index[0]]]
-#				yMasterIdx = mapLabelToIdx[localLabels[index[1]]]
-#
-#				# Add each element to the giant matrix of all DSDs
-#				allDsds[xMasterIdx, yMasterIdx, currentCount] = float(score)
-
 		print "  Time to process entire file:        " + str(time.clock() - time_processfile)
 		currentCount += 1
 
@@ -113,34 +98,43 @@ def main(argv):
 	# ===== CALCULATE AVERAGE SCORES =====		
 	print "Calculating average scores..."
 	time_averagescores = time.clock()
+	bins = xrange(25) # TODO un-hardcode this
 	matrixAverageScores = numpy.zeros(shape=(numLabels, numLabels))
+	
 	for row_i in xrange(0, numLabels):
 		for col_j in xrange(0, numLabels):
 			if col_j == row_i: # diagonal
 				matrixAverageScores[row_i, col_j] = 0.0
 			if col_j > row_i: # upper triangle
 				dsdScores = filter(None, sorted(allDsds[row_i][col_j][:], reverse=True))
-				numScores = len(dsdScores)
+				hist,binEdges = numpy.histogram(dsdScores, bins=bins)
+				print hist
+				#print binEdges
+				maxCount = max(hist)
+				print maxCount
+				maxCountIdx = numpy.where(hist == hist.max()) # TODO decide how to break ties
+				upperBinEdge = binEdges[maxCountIdx[0]] # TODO do NOT use just the first idx
+				lowerBinEdge = binEdges[maxCountIdx[0]-1]
+				dsdScores = [lowerBinEdge <= dsdScores < upperBinEdge]
+				print len(dsdScores)
 				
-				if numScores > 0:
-					cutoffIdx = int(numScores * float(threshold)) + 1 # +1 to get ceiling
-					dsdScores = dsdScores[:cutoffIdx]
-					average = sum(dsdScores)/cutoffIdx
-					matrixAverageScores[row_i, col_j] = average
-					matrixAverageScores[col_j, row_i] = average
-				else:
-					matrixAverageScores[row_i, col_j] = 999.9
-					matrixAverageScores[col_j, row_i] = 999.9
-
+			
+	
+	
+	
 	print "  Time to average scores:             " + str(time.clock() - time_averagescores)			
 				
 
 	# ===== WRITE RESULTS TO FILE =====
 	print "Writing results to file..."
 	time_writetofile = time.clock()
+	# Create a (numLabels x 1) array of labels for the top row
 	labels_row = numpy.array((labels), dtype='|S12')[numpy.newaxis]
+	# Concatenate the row of labels to the matrix along the x axis
 	matrixAverageScores = numpy.concatenate((labels_row, matrixAverageScores), 0)
+	# Add the corner blank spot to the labels and rotate it to use as the left column
 	labels_col = numpy.insert(labels_row, 0, " ")[numpy.newaxis].T
+	# Concatenate the column of labels to the matrix along the y axis
 	matrixAverageScores = numpy.concatenate((labels_col, matrixAverageScores), 1)
 
 	with open(outputFile, 'w') as outFile:
