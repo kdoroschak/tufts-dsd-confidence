@@ -13,7 +13,7 @@ def main(argv):
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:")
+		opts, args = getopt.getopt(argv,"hi:o:m:b:")
 	except getopt.GetoptError:
 		print ''
 		print 'USAGE: ./DsdAverage-matrix-maxtopandbottom.py <options>'
@@ -37,7 +37,7 @@ def main(argv):
 		elif opt == '-m':
 			masterMatrixFile = arg
 		elif opt == '-b':
-			bisectMode = arg
+			bisectMode = int(arg)
 
 	time_entireprogram = time.clock()
 	# ===== CREATE MATRIX FRAMEWORK =====
@@ -73,6 +73,7 @@ def main(argv):
 			localLabels = dsdFile.readline().split('\t')[1:]
 			localLabels = [label.strip() for label in localLabels]
 		numLocalLabels = len(localLabels)
+
 
 		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1, dtype=float)
 
@@ -127,28 +128,28 @@ def main(argv):
 					#numHigherScores = bisect.bisect(dsdScores, fullAverage)
 					numLowerScores = bisect.bisect(dsdScores, originalDsdScore)
 					numHigherScores = numScores - numLowerScores
-					print str(dsdScores[:numLowerScores]) + " < " + str(originalDsdScore) + " < " + str(dsdScores[numLowerScores:])
+					#print str(dsdScores[:numLowerScores]) + " < " + str(originalDsdScore) + " < " + str(dsdScores[numLowerScores:])
 
 					if bisectMode == 0:
-						upperPartition = numHigherScores
+						upperPartition = numLowerScores
 						lowerPartition = numLowerScores
 					elif bisectMode == 1:
-						upperPartition = numHigherScores/2
-						lowerPartition = numLowerScores/2
+						upperPartition = numLowerScores + int(numHigherScores / 2)
+						lowerPartition = numLowerScores/2 + 1
 					elif bisectMode == 2:
-						upperPartition = (numHigherScores + (numLowerScores / 2))
-						lowerPartition = (numLowerScores + (numHigherScores / 2))
+						upperPartition = numLowerScores / 2
+						lowerPartition = numLowerScores + (numHigherScores / 2) + 1
 
 					# More scores > original
 					if numHigherScores > numLowerScores:
-						topDsdScores = dsdScores[:upperPartition]
+						topDsdScores = dsdScores[upperPartition:]
 						topAverage = sum(topDsdScores)/len(topDsdScores)
 						matrixAverageScores[row_i, col_j] = topAverage
 						matrixAverageScores[col_j, row_i] = topAverage
 
 					# More scores < original
-					if numHigherScores < numLowerScores:
-						bottomDsdScores = dsdScores[(numScores - lowerPartition):]
+					elif numHigherScores < numLowerScores:
+						bottomDsdScores = dsdScores[:lowerPartition]
 						bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
 						matrixAverageScores[row_i, col_j] = bottomAverage
 						matrixAverageScores[col_j, row_i] = bottomAverage
@@ -162,8 +163,7 @@ def main(argv):
 					matrixAverageScores[row_i, col_j] = 999.9
 					matrixAverageScores[col_j, row_i] = 999.9
 
-	print "  Time to average scores:             " + str(time.clock() - time_averagescores)			
-				
+	print "  Time to average scores:             " + str(time.clock() - time_averagescores)
 
 	# ===== WRITE RESULTS TO FILE =====
 	print "Writing results to file..."
