@@ -114,7 +114,7 @@ def getTransList(ppbConf, names):
 		sumRow = sum(ppbConf[row])
 		if sumRow != 0:
 			transRow = ppbConf[row]/sumRow
-			print transRow
+			#print transRow
 		for col in xrange(0, numNodes):
 			proteinA = accessNames[row][0]
 			proteinB = accessNames[col][0]
