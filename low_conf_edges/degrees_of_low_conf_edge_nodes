@@ -1,0 +1,41 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def main(argv):
+
+    ppifile = open(argv[1], 'r')
+    degfile = open(argv[2], 'r')
+    outfile = open(argv[3], 'w')
+
+    nameset = set()
+
+    for line in ppifile:
+        cols = line.split('\t')
+        nameA = cols[0]
+        nameB = cols[1]
+        if len(cols) == 2:
+            nameB = nameB[:-1]
+        if not nameA in nameset:
+            nameset.add(nameA)
+        if not nameB in nameset:
+            nameset.add(nameB)
+
+    deglist = list()
+
+    for line in degfile:
+        cols = line.split('\t')
+        if cols[0] in nameset:
+            deglist.append((int(cols[1][:-1]), cols[0]))
+
+    deglist.sort()
+
+    for deg in deglist:
+        outfile.write(deg[1])
+        outfile.write('\t')
+        outfile.write(str(deg[0]))
+        outfile.write('\n')
+
+
+if __name__ == "__main__":
+    main(sys.argv)

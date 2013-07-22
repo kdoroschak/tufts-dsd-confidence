@@ -1,0 +1,24 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def main(argv):
+
+    if len(argv) < 3:
+        print "./remove_third_col_tab [3-col tabbed file input] [2-col tabbed file output]"
+        exit()
+
+    infile = open(argv[1], 'r')
+    outfile = open(argv[2], 'w')
+
+    for line in infile:
+        cols = line.split('\t')
+        newLine = cols[0]
+        outfile.write(newLine)
+        outfile.write('\n')
+
+    infile.close()
+    outfile.close()
+
+if __name__ == "__main__":
+    main(sys.argv)
