@@ -1,77 +1,139 @@
 #!/usr/bin/env python2.7
 
-import os, sys, getopt, numpy, time
+# Huge memory requirement, must be run on a server like pulsar or meteor.
+
+import os, sys, argparse, numpy, time
 
 def main(argv):
-	dsdFiles = []
-	dsdPath = ''
-	outputFile = ''
-	masterMatrixFile = ''
+	time_entireprogram = time.clock()
+	useMasterMatrix = False
+	
+	methodOptions = ['geometricmean', 'upperthreshold', 'arithmeticmean']
 
-	# Read in command line args and process
+	# Build command line argument parser
+	parser = argparse.ArgumentParser(description='Take the average of multiple DSD files using one of several averaging methods.')
+	parser.add_argument('--dsdFiles', '-i', required=True, type=str, help='directory containing only the DSD files to be averaged')
+	parser.add_argument('-o', required=True, type=str, help='name of the output (averaged) file')
+	parser.add_argument('--originalDsd', '-d', required=True, type=str, help='master matrix file, typically the original DSD file. header contains all possible proteins that show up in the input files')
+	parser.add_argument('--threshold', '-t', required=False, type=float, help='threshold value from 0 to 1 of top t%% of values to use in output')
+	parser.add_argument('--method', '-m', required=True, choices=methodOptions, help='select the averaging method from the above choices')
+	parser.add_argument('-a', '--xtraarg', required=False, type=str, help='additional argument if the specific method requires it. TODO add more info about which args are required')
+	
+	args = parser.parse_args()
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:")
-	except getopt.GetoptError:
-		print ''
-		print 'USAGE: ./DsdAverage <options>'
-		print 'Use -h for more information about options.'
-	for opt, arg in opts:
-		if opt == '-h':
-			print '-i  directory containing dsd files to be averaged'
-			print '-o  name of output (averaged) file'
-			print '-m  master matrix file. header contains all possible proteins that show up in the input files'
-			sys.exit(1)
-		elif opt == '-i':
-			try:
-				dsdPath = arg
-				dsdFiles = os.listdir(arg)
-			except getopt.GetoptError:
-				print 'Error opening path to files.'
-		elif opt == '-o':
-			outputFile = arg
-		elif opt == '-m':
-			masterMatrixFile = arg
-
-
-	# ===== CREATE MATRIX FRAMEWORK =====
+		dsdPath = args.dsdFiles
+		dsdFiles = os.listdir(dsdPath)
+		numDsdFiles = len(dsdFiles)
+	except:
+		print 'Error opening path to DSD files.'
+	outputFile = args.o
+	masterMatrixFile = args.originalDsd
+	threshold = args.threshold
+	method = args.method
+	arg=args.xtraarg
+	
+	# ======= IMPORT MODULE AND SET VARIABLES BASED ON METHOD =======
+	# Method: Geometric mean
+	if method == "geometricmean":
+		print "Using geometric mean module to average DSDs."
+		if threshold is not None:
+			print "  Warning: Threshold is not used and will be ignored."
+		if arg is not None:
+			print "  Warning: Adt'l argument is not used and will be ignored."
+		useMasterMatrix = False
+		import module_geometricmean as averager
+	
+	# Method: Upper threshold
+	elif method == "upperthreshold":
+		print "Using upper threshold module to average DSDs."
+		if threshold is None:
+			print "  Error: Please specify threshold."
+			exit()
+		if arg is not None:
+			print "  Warning: Adt'l argument is not used and will be ignored."
+		useMasterMatrix = False
+		import module_upperthreshold as averager
+		
+	# Method: Arithmetic mean - all possible scores
+	if method == "arithmeticmean":
+		print "Using arithmetic mean module to average DSDs."
+		if threshold is not None:
+			print "  Warning: Threshold is not used and will be ignored."
+		if arg is not None:
+			print "  Warning: Adt'l argument is not used and will be ignored."
+		useMasterMatrix = False
+		import module_arithmeticmean as averager	
+	
+	# Template method
+	elif method == "":
+		print "Using ____ module to average DSDs."
+		# is additional arg required?
+		# is threshold required/not being used?
+		# is master matrix needed?
+		# import module_X as averager
+	
+	if (threshold > 1 or threshold < 0) and (threshold is not None):
+		print "Error: Value of threshold should be from 0 to 1."
+		exit()
+	
+	
+	# ========== CREATE MATRIX FRAMEWORK ==========
+	print "Creating the matrix framework...",
+	sys.stdout.flush()
+	time_framework = time.clock()
 	# Read in header of master file
 	with open(masterMatrixFile) as masterMatrix:
 		labels = masterMatrix.readline()
 	labels = labels.split('\t')[1:]
 	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
-	
+			
 	# Create map from label -> master index
 	mapLabelToIdx = {}
 	for label_idx in xrange(numLabels):
 		mapLabelToIdx[labels[label_idx].strip()] = label_idx
 
-	# Create matrices using all edges in header, initialized to 0
-	matrixTotalScores = numpy.zeros(shape=(numLabels, numLabels))
-	matrixNumScores   = numpy.zeros(shape=(numLabels, numLabels))
+	# Create giant matrix using all edges in header, initialized to 0.0
+	allDsds = numpy.zeros(shape=(numLabels, numLabels, numDsdFiles), dtype=float)
+	print "   took " + str(time.clock() - time_framework) + "s."
 
 
-	# ===== CALCULATE TOTAL SCORES AND COUNTS FOR ALL MATRICES =====
-	# Add each new element to total and count
+	# ========== READ ORIGINAL DSD ==========
+	if useMasterMatrix:
+		print "Reading in the original DSD...",
+		sys.stdout.flush()
+		time_loadfile = time.clock()
+		masterMatrix = numpy.loadtxt(masterMatrixFile, delimiter='\t', usecols=xrange(1,numLabels+1), skiprows=1)
+		print "   took " + str(time.clock() - time_loadfile) + "s."
+	else:
+		masterMatrix = ''
+
+
+	# ========== POPULATE GIANT MATRIX ==========
+	# Add each element from individual files to giant matrix
+	print "Processing all files at " + dsdPath + "."
 	dsdFiles.sort()
-	numDsdFiles = len(dsdFiles)	
-	print "Processing all files at " + dsdPath + "..."
-	currentCount = 1
+	currentCount = 0
 	for currentDsdFile in dsdFiles:
-		dsdFileWithPath = dsdPath + "/" + currentDsdFile
-		print "Processing DSD file " + str(currentCount) + "/" + str(numDsdFiles) + ": " + dsdFileWithPath	
 		time_processfile = time.clock()
+		dsdFileWithPath = dsdPath + "/" + currentDsdFile
+		print "Working on file " + str(currentCount + 1) + "/" + str(numDsdFiles) + ": " + dsdFileWithPath	
 		
 		# Read file to be averaged into numpy array
+		print "  Reading file into numpy array...",
+		sys.stdout.flush()
 		time_loadfile = time.clock()
-		with open(dsdFileWithPath) as dsdFile:
-			localLabels = dsdFile.readline().split('\t')[1:]
-			[label.strip() for label in localLabels]
+		dsdFile = open(dsdFileWithPath)
+		localLabels = dsdFile.readline().split('\t')[1:]
+		localLabels = [label.strip() for label in localLabels]
 		numLocalLabels = len(localLabels)
+
 		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1, dtype=float)
 
-		print "  Time to read file into numpy array: " + str(time.clock() - time_loadfile)
+		print "   took " + str(time.clock() - time_loadfile) + "s."
 
+		print "  Matching indices and populating big matrix...",
+		sys.stdout.flush()
 		time_lineupfile = time.clock()
 		# Line up the labels and populate the big array
 		for i in xrange(numLocalLabels):
@@ -82,54 +144,40 @@ def main(argv):
 					score = dsdMatrix[i][j]
 					allDsds[xMasterIdx, yMasterIdx, currentCount] = score
 					
-		print "  Time to line up protein labels:     " + str(time.clock() - time_lineupfile)
-
-#		dsdMatrix = numpy.loadtxt(dsdFileWithPath, delimiter='\t', usecols=xrange(1,numLocalLabels+1), skiprows=1)
-#		print "  Time to read file into numpy array:\t" + str(time.clock() - time_loadfile)
-
-#		for index, score in numpy.ndenumerate(dsdMatrix):
-#			if index[1] > index[0]: # for humans: col > row, upper triangle only
-#				# Look up the position of each element in the master matrix
-#				xMasterIdx = mapLabelToIdx[localLabels[index[0]].strip()]
-#				yMasterIdx = mapLabelToIdx[localLabels[index[1]].strip()]
-#
-#				# Add each element to the master total and count
-#				matrixTotalScores[xMasterIdx, yMasterIdx] += score
-#				matrixNumScores[xMasterIdx, yMasterIdx] += 1
-
-		print "  Time to process entire file:       \t" + str(time.clock() - time_processfile)
+		print "   took " + str(time.clock() - time_lineupfile) + "s."
+		print "  Entire file took " + str(time.clock() - time_processfile) + "s."
 		currentCount += 1
-	
+	dsdMatrix = '' # clean up memory
 
-	# ===== CALCULATE AVERAGE SCORES =====		
+
+	# ========== CALCULATE AVERAGE SCORES ==========		
 	print "Calculating average scores..."
 	time_averagescores = time.clock()
-	for index, score in numpy.ndenumerate(matrixTotalScores):
-		if index[1] > index[0]: # col > row, upper triangle only. diag = 0
-			index_t = (index[1], index[0])
-			numScores = matrixNumScores[index]
-			if numScores > 0:
-				averageScore = score / matrixNumScores[index]
-				matrixTotalScores[index]   = averageScore
-				matrixTotalScores[index_t] = averageScore
-			else:
-				matrixTotalScores[index] = 999.9 # sentinel value, effectively +inf in this case
-	print "  Time to average scores:            \t" + str(time.clock() - time_averagescores)
-	
+		
+	matrixAverageScores = averager.calculateAverage(allDsds, masterMatrix, threshold, arg)
+	allDsds = '' # clean up memory
+	masterMatrix = '' # clean up memory
 
-	# ===== WRITE RESULTS TO FILE =====
-	print "Writing results to file..."
+	print "  Averaging took " + str(time.clock() - time_averagescores) +  "s."
+				
+
+	# ========== WRITE RESULTS TO FILE ==========
+	print "Writing results to file...",
+	sys.stdout.flush()
+	time_writetofile = time.clock()
 	labels_row = numpy.array((labels), dtype='|S12')[numpy.newaxis]
-	matrixTotalScores = numpy.concatenate((labels_row, matrixTotalScores), 0)
+	matrixAverageScores = numpy.concatenate((labels_row, matrixAverageScores), 0)
 	labels_col = numpy.insert(labels_row, 0, " ")[numpy.newaxis].T
-	matrixTotalScores = numpy.concatenate((labels_col, matrixTotalScores), 1)
+	matrixAverageScores = numpy.concatenate((labels_col, matrixAverageScores), 1)
 
 	with open(outputFile, 'w') as outFile:
-		for row in matrixTotalScores:
+		for row in matrixAverageScores:
 			outFile.write('\t'.join(row))
 			outFile.write('\n')		
 
-	print "Done."		
+	print "   took " + str(time.clock() - time_writetofile) + "s."
+	print "Done."
+	print "  Total execution time:           " + str(time.clock() - time_entireprogram)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])

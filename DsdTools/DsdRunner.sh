@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# biogrid_DSD_runner.sh
+# DsdRunner.sh
 # Run a batch of files through DSD
 
 # See below the script for instructions.
@@ -10,6 +10,7 @@ do
 	output_file=/path/to/output/DSD/file/example/filename-$i
 	input_file=/path/to/input/PPI/file/example/ppi-$i.ppi
 	./DSDmain.py --outformat matrix -o $output_file $input_file
+	chmod 664 $output_file
 done
 
 # === Instructions ===

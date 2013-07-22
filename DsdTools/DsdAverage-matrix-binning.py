@@ -2,7 +2,7 @@
 
 # Huge memory requirement, must be run on a server like pulsar or meteor.
 
-import os, sys, getopt, numpy, time, scipy.stats
+import os, sys, getopt, numpy, time
 
 def main(argv):
 	dsdFiles = []
@@ -105,22 +105,23 @@ def main(argv):
 		for col_j in xrange(0, numLabels):
 			if col_j == row_i: # diagonal
 				matrixAverageScores[row_i, col_j] = 0.0
-			if col_j > row_i: # upper triangle
+			if col_j > row_i and row_i < 20: # upper triangle
 				dsdScores = filter(None, sorted(allDsds[row_i][col_j][:], reverse=True))
 				hist,binEdges = numpy.histogram(dsdScores, bins=bins)
-				print hist
+				#print hist
 				#print binEdges
-				maxCount = max(hist)
-				print maxCount
-				maxCountIdx = numpy.where(hist == hist.max()) # TODO decide how to break ties
-				upperBinEdge = binEdges[maxCountIdx[0]] # TODO do NOT use just the first idx
-				lowerBinEdge = binEdges[maxCountIdx[0]-1]
-				dsdScores = [lowerBinEdge <= dsdScores < upperBinEdge]
-				print len(dsdScores)
+				#maxCount = max(hist)
+				#print maxCount
+				maxCountIdx = numpy.where(hist == hist.max())[0] # TODO decide how to break ties
+				upperBinEdge = binEdges[maxCountIdx+1][0] # TODO do NOT use just the first idx
+				lowerBinEdge = binEdges[maxCountIdx][0]
+				#print upperBinEdge, lowerBinEdge
+				dsdScores = [x for x in dsdScores if (lowerBinEdge <= x) and (x < upperBinEdge)]
+				#print len(dsdScores)
+				average = numpy.mean(dsdScores)
+				matrixAverageScores[row_i, col_j] = average
+				matrixAverageScores[col_j, row_i] = average	
 				
-			
-	
-	
 	
 	print "  Time to average scores:             " + str(time.clock() - time_averagescores)			
 				
@@ -128,7 +129,7 @@ def main(argv):
 	# ===== WRITE RESULTS TO FILE =====
 	print "Writing results to file..."
 	time_writetofile = time.clock()
-	# Create a (numLabels x 1) array of labels for the top row
+	# Create a numLabels x 1 array of labels for the top row
 	labels_row = numpy.array((labels), dtype='|S12')[numpy.newaxis]
 	# Concatenate the row of labels to the matrix along the x axis
 	matrixAverageScores = numpy.concatenate((labels_row, matrixAverageScores), 0)
