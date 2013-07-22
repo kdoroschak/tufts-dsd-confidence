@@ -135,7 +135,7 @@ def main(argv):
 						matrixAverageScores[col_j, row_i] = topAverage
 
 					# More scores < original
-					elif numHigherScores < numLowerScores:
+					if numHigherScores < numLowerScores:
 						bottomDsdScores = dsdScores[numHigherScores:]
 						bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
 						matrixAverageScores[row_i, col_j] = bottomAverage
