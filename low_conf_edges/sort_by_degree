@@ -1,0 +1,51 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def main(argv):
+
+    if len(argv) < 4:
+        print "[infile|ppi] [infile|degrees] [outfile]"
+        exit()
+
+    ppifile = open(argv[1], 'r')
+    degfile = open(argv[2], 'r')
+    outfile = open(argv[3], 'w')
+
+    degrees = {}
+
+    for line in degfile:
+        cols = line.split('\t')
+        name = cols[0]
+        degree = int(cols[1][:-1])
+        degrees[name] = degree
+
+    ppilist = list()
+    degreepairlist = list()
+
+    for line in ppifile:
+        cols = line.split('\t')
+        nameA = cols[0]
+        nameB = cols[1]
+        if nameA == nameB:
+            continue
+        degA = degrees[nameA]
+        degB = degrees[nameB]
+        ppi = (nameA, nameB)
+        position = len(ppilist)
+        degreepair = ((degA * degB), degA, degB, position)
+        degreepairlist.append(degreepair)
+        ppilist.append(ppi)
+
+    degreepairlist.sort()
+
+    for degreepair in degreepairlist:
+        ppi = ppilist[degreepair[3]]
+        outfile.write(ppi[0] + '\t')
+        outfile.write(ppi[1] + '\t')
+        outfile.write(str(degreepair[1]) + '\t')
+        outfile.write(str(degreepair[2]) + '\n')
+
+
+if __name__ == "__main__":
+    main(sys.argv)

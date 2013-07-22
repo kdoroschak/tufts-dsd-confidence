@@ -14,7 +14,7 @@ def main(argv):
 
 	# Read in command line args and process
 	try:
-		opts, args = getopt.getopt(argv,"hi:o:m:")
+		opts, args = getopt.getopt(argv,"hi:o:m:b:")
 	except getopt.GetoptError:
 		print ''
 		print 'USAGE: ./DsdAverage-matrix-maxtopandbottom.py <options>'
@@ -37,6 +37,8 @@ def main(argv):
 			outputFile = arg
 		elif opt == '-m':
 			masterMatrixFile = arg
+		elif opt == '-b':
+			bisectMode = int(arg)
 
 	time_entireprogram = time.clock()
 	# ===== CREATE MATRIX FRAMEWORK =====
@@ -47,7 +49,7 @@ def main(argv):
 	labels = [label.strip() for label in labels]
 	numLabels = len(labels)
 	masterMatrix = numpy.loadtxt(masterMatrixFile, delimiter='\t', usecols=xrange(1,numLabels+1), skiprows=1)
-		
+
 	# Create map from label -> master index
 	mapLabelToIdx = {}
 	for label_idx in xrange(numLabels):
@@ -118,13 +120,20 @@ def main(argv):
 				numScores = len(dsdScores)
 				
 				if bisectMode == 0:
-					partition = numScores
+					topPartition = (numScores + 1) / 2
+					botPartition = (numScores + 1) / 2
 				elif bisectMode == 1:
-					partition = numScores / 4
+					topPartition = numScores / 4
+					botPartition = (numScores * 3) / 4
 				elif bisectMode == 2:
-					partition = numScores * 3 / 4
+					topPartition = (numScores * 3) / 4
+					botPartition = numScores / 4
 				
 				if numScores > 0:
+					if col_j == 2 and row_j == 0:
+						print numScores
+						print masterMatrix[row_i][col_j]
+						print dsdScores
 					cutoffIdx = int(numScores * float(threshold)) + 1 # +1 to get ceiling
 					
 					# Original DSD score
@@ -133,7 +142,7 @@ def main(argv):
 					# Avg of top 50% DSD scores
 					topDsdScores = dsdScores[:cutoffIdx]
 					topAverage = sum(topDsdScores)/len(topDsdScores)
-
+					
 					# Avg of bottom 50% DSD scores
 					if cutoffIdx < numScores:
 						bottomDsdScores = dsdScores[cutoffIdx:]
@@ -142,12 +151,12 @@ def main(argv):
 					bottomAverage = sum(bottomDsdScores)/len(bottomDsdScores)
 					
 					# Select farther DSD average from original DSD score
-					if (topAverage - originalDsdScore) >= (originalDsdScore - bottomAverage):
-						newAvg = sum(dsdScores[:partition])/len(dsdScores[:partition])
+					if abs((topAverage - originalDsdScore)) >= abs((originalDsdScore - bottomAverage)):
+						newAvg = sum(dsdScores[:topPartition])/len(dsdScores[:topPartition])
 						matrixAverageScores[row_i, col_j] = newAvg
 						matrixAverageScores[col_j, row_i] = newAvg
 					else:
-						newAvg = sum(dsdScores[partition:])/len(dsdScores[partition:])
+						newAvg = sum(dsdScores[botPartition:])/len(dsdScores[botPartition:])
 						matrixAverageScores[row_i, col_j] = newAvg
 						matrixAverageScores[col_j, row_i] = newAvg
 				else:

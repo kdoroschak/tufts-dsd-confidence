@@ -1,0 +1,45 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+
+def main(argv):
+
+    if len(argv) < 4:
+        print "[infile|adj matrix] [infile|ordered prot list] [outfile|degree counts]"
+        exit()
+
+    adjname = argv[1]
+    pname = argv[2]
+    degname = argv[3]
+
+    adjin = open(adjname, 'r')
+    protin = open(pname, 'r')
+    outfile = open(degname, 'w')
+
+    proteins = list()
+
+    for line in protin:
+        proteins.append(line[:-1])
+
+    linenum = 0
+    degree = 0
+    count = 0
+
+    for line in adjin:
+        for x in xrange(len(line)):
+            if line[x] != '0' and line[x] != '\n':
+                degree += 1
+        outfile.write(proteins[linenum])
+        outfile.write('\t')
+        outfile.write(str(degree))
+        outfile.write('\n')
+        linenum += 1
+        if degree == 1:
+            count += 1
+        degree = 0
+
+    print count
+
+if __name__ == "__main__":
+    main(sys.argv)

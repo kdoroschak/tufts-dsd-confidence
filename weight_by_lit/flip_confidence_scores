@@ -1,0 +1,43 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def open_or_abort(filename, option="r"):
+    try:
+        newfile = open(filename, option)
+    except:
+        print "Could not open file", filename
+        exit()
+
+    return newfile
+
+def main(argv):
+
+    if len(argv) < 3:
+        print "./flip_confidence_scores [input conf] [output conf]"
+        exit()
+
+    infilename = argv[1]
+    outfilename = argv[2]
+
+    infile = open_or_abort(infilename)
+    outfile = open_or_abort(outfilename, option='w')
+
+    for line in infile:
+        cols = line.split('\t')
+        names = '\t'.join([cols[0], cols[1]])
+        conf = float(cols[2][:-1])
+
+        if conf < 1:
+            conf = 1
+        else:
+            conf = 0.01
+
+        outfile.write(names)
+        outfile.write('\t')
+        outfile.write(str(conf))
+        outfile.write('\n')
+
+
+if __name__ == "__main__":
+    main(sys.argv)

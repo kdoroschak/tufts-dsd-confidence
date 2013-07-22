@@ -1,0 +1,32 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def main(argv):
+
+    if len(argv) < 5:
+        print "[infile|ppi] [protein name] [protein name] [outfile|ppi]"
+        exit()
+
+    infile = open(argv[1], 'r')
+    nameA = argv[2]
+    nameB = argv[3]
+    outfile = open(argv[4], 'w')
+
+    for line in infile:
+        cols = line.split('\t')
+        tempA = cols[0]
+        tempB = cols[1]
+        if len(cols) == 2:
+            tempB = tempB[:-1]
+
+        if (not ((nameA == tempA and nameB == tempB) or (nameA == tempB and nameB == tempA))):
+            outfile.write(line)
+        else:
+            print line
+
+    infile.close()
+    outfile.close()
+
+if __name__ == "__main__":
+    main(sys.argv)

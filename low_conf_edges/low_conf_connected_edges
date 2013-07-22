@@ -1,0 +1,48 @@
+#!/usr/bin/env python2.7
+
+import sys
+
+def main(argv):
+
+    if len(argv) < 5:
+        print "[file|confidence] [file|connected] [float|threshold] [file|output]"
+        exit()
+
+    confname = argv[1]
+    connectedname = argv[2]
+    threshold = float(argv[3])
+    outfilename = argv[4]
+
+    confinfile = open(confname, 'r')
+    connectedinfile = open(connectedname, 'r')
+    outfile = open(outfilename, 'w')
+
+    connectedset = set()
+
+    for line in connectedinfile:
+        cols = line.split('\t')
+        if len(cols) > 2:
+            print "WHOOPS"
+        names = [cols[0], cols[1][:-1]]
+        names.sort()
+        names = '\t'.join(names)
+        if not names in connectedset:
+            connectedset.add(names)
+
+    for line in confinfile:
+        cols = line.split('\t')
+        names = [cols[0], cols[1]]
+        names.sort()
+        names = '\t'.join(names)
+        conf = float(cols[2][:-1])
+        if conf <= threshold:
+            if names in connectedset:
+                outfile.write(names)
+                outfile.write('\t')
+                outfile.write(str(conf))
+                outfile.write('\n')
+
+
+
+if __name__ == "__main__":
+    main(sys.argv)
