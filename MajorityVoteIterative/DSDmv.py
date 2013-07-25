@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 """
 
 @author: mcao01
@@ -85,8 +86,9 @@ options = parser.parse_args()
 #### Phase 1: Parse All Input Files
 #ppbAdj = myparser.parsePPI(options.infile)
 #N = len(ppbAdj[:,0])
-#ppbLabel = myparser.parseLabel(options.label)
-#m = len(ppbLabel[0,:]) - 1
+ppbLabel = myparser.parseLabel(options.label)
+m = len(ppbLabel[0,:]) - 1
+numLabels = m
 #pnRD = myparser.parseRDIndex(options.rdindex, ppbLabel)
 #pnFoldIndex = myparser.GetFoldIndex(pnRD, N, options.k)
 
@@ -107,7 +109,7 @@ if options.mode == 1:
 elif options.mode == 2:
     prediction = mvote.DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, options.neighbor)
 elif options.mode == 3:
-    (masterPredictionMatrix, mapProtNamesToMasterIdx, trainingAnns) = mvote.DSDWeightedMVIterativeSetup(options.label, options.rdindex, options.completeProteinList)
+    (masterPredictionMatrix, mapProtNamesToMasterIdx) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList)
     
 #### Phase 3: Write Output
 

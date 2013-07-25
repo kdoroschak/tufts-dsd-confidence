@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 """
 Created on Wed May 22 13:56:13 2013
 
@@ -160,7 +161,7 @@ def DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, top):
     return prediction
     
     
-def DSDWeightedMVIterativeSetup(annFile, randomIdxFile, completeProteinListFile):
+def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFile):
     # Read in the full list of proteins (labels for master matrix)
     # Create map from protein name to index in prediction matrix
     mapProtNamesToMasterIdx = {}
@@ -179,28 +180,28 @@ def DSDWeightedMVIterativeSetup(annFile, randomIdxFile, completeProteinListFile)
         
     # Read in annotation file (global)
     # Set up an annotation list with half of all labeled nodes "covered"
-    numLabels = 0
-    trainingAnns = []
-    with open(annFile, 'r') as annFile:
-        for i,line in enumerate(annFile):
-            line = line.strip()
-            if i in randomIdxSet:
-                numLabels = len(line)
-                if numLabels <= 1:
-                    print "numLabels <= 1, reading in annotation file"
-                trainingAnns.append('1')
-            else:
-                trainingAnns.append(line)
+    #numLabels = 0
+    #trainingAnns = []
+    #with open(annFile, 'r') as annFile:
+        #for i,line in enumerate(annFile):
+            #line = line.strip()
+            #if i in randomIdxSet:
+                #numLabels = len(line)
+                #if numLabels <= 1:
+                    #print "numLabels <= 1, reading in annotation file"
+                #trainingAnns.append('1')
+            #else:
+                #trainingAnns.append(line)
     #print trainingAnns
-            
+
     # Create empty prediction matrix (numAllProteins X 2*numLabels+1)    
     masterPredictionMatrix = np.zeros((numProteins, 2*numLabels+1))
     
-    return (masterPredictionMatrix, mapProtNamesToMasterIdx, trainingAnns)
+    return (masterPredictionMatrix, mapProtNamesToMasterIdx)
     
     
 ### BEGINNING OF ITERATIVE 
-def DSDWeightedMVIterative(ppfDSD, ppbLabel, pnFoldIndex, pnRD, top):
+def DSDWeightedMVIterative(ppfDSD, ppbLabel, pnRD, top, localProteinList):
     '''
     Weighted DSD Majority Voting
     input: ppfDSD -- DSD matrix
@@ -218,13 +219,6 @@ def DSDWeightedMVIterative(ppfDSD, ppbLabel, pnFoldIndex, pnRD, top):
                          last row: votes of the previous label
     all indeces start from 1
     '''
-    # SETUP:
-    # Read in annotation file (global)
-    # Read in random index file (global)
-    # Set up an internal annotation file with half of all labeled nodes "covered"
-    # Read in the full list of proteins (labels for master matrix)
-    # Create empty prediction matrix (numAllProteins X 2*numLabels+1)
-    # Create map from protein name to index in prediction matrix
     
     # ITERATIONS:
     # Read in DSD for single iteration
@@ -239,7 +233,9 @@ def DSDWeightedMVIterative(ppfDSD, ppbLabel, pnFoldIndex, pnRD, top):
     
     # "Return":
     #     Annotation file
-    #     Prediction matrix    
+    #     Prediction matrix
+
+    
     
    
 
