@@ -88,7 +88,7 @@ def parseRDIndex(filename, ppbLabel):
     '''
     it parses random indeces from filename and verify their labels
     '''
-    print 'Parsing random indeces of labeled nodes'
+    print 'Parsing random indices of labeled nodes'
     infile = open(filename, 'r')    
     index = 0
     n1 = len(ppbLabel[:,0]) - sum(ppbLabel[:,0])

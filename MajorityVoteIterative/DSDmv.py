@@ -80,37 +80,36 @@ parser.add_argument("-p", "--completeProteinList", default="test",
 #        '-m', '2', '-t', '10']
 #options = parser.parse_args(args)
 options = parser.parse_args()
-#****************************************************
-# TODO: reactivate this code!!
-#****************************************************
+
 #### Phase 1: Parse All Input Files
-#ppbAdj = myparser.parsePPI(options.infile)
-#N = len(ppbAdj[:,0])
+ppbAdj = myparser.parsePPI(options.infile)
+N = len(ppbAdj[:,0])
 ppbLabel = myparser.parseLabel(options.label)
 m = len(ppbLabel[0,:]) - 1
 numLabels = m
-#pnRD = myparser.parseRDIndex(options.rdindex, ppbLabel)
-#pnFoldIndex = myparser.GetFoldIndex(pnRD, N, options.k)
+pnRD = myparser.parseRDIndex(options.rdindex, ppbLabel)
+pnFoldIndex = myparser.GetFoldIndex(pnRD, N, options.k)
 
-#if options.mode != 0:
-#    ppfDSD = myparser.parseDSD(options.dsdfile)
+if options.mode != 0 and options.mode != 3:
+    ppfDSD = myparser.parseDSD(options.dsdfile)
     #### print ppfDSD[1,3], ppfDSD[5,11]
 
 #### Phase 2: Conduct Majority Voting
 
 if options.mode == 0:
     prediction = mvote.ordinaryMV(ppbAdj, ppbLabel, pnFoldIndex, pnRD)
-# TODO UNCOMMENT THE NEXT 4 LINES #elif options.neighbor <= 0 or options.neighbor >= N/2:
-#    options.neighbor == 10
-#    print >> sys.stderr, 'the setting for top DSD neighbors is invalid,'
-#    print >> sys.stderr, 'change to 10 instead by default.\n'
+elif options.neighbor <= 0 or options.neighbor >= N/2:
+    options.neighbor == 10
+    print >> sys.stderr, 'the setting for top DSD neighbors is invalid,'
+    print >> sys.stderr, 'change to 10 instead by default.\n'
 if options.mode == 1:
     prediction = mvote.DSDUnweightMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, options.neighbor)
 elif options.mode == 2:
     prediction = mvote.DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, options.neighbor)
 elif options.mode == 3:
-    (masterPredictionMatrix, mapProtNamesToMasterIdx) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList)
-    
+    (masterPredictionMatrix, mapProtNamesToMasterIdx, annMatrix) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
+    prediction = mvote.DSDWeightedMVIterative(options.dsdfile, ppbLabel, masterPredictionMatrix, options.neighbor, options.completeProteinList, mapProtNamesToMasterIdx)
+
 #### Phase 3: Write Output
 
 if options.mode == 0:
