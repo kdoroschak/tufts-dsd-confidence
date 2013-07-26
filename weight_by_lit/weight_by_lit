@@ -14,11 +14,11 @@ def locount_to_score(locount):
 
 def hicount_to_score(hicount):
     if hicount == 1:
-        return 0
+        return .0001
     elif hicount == 2:
-        return .5
+        return .0001
     elif hicount == 3:
-        return .75
+        return .0001
     elif hicount > 3:
         return .85
     else:
@@ -85,6 +85,8 @@ def main(argv):
         if not names in nameset:
             nameset.add(names)
 
+    threecount = 0
+
     for names in nameset:
         if names in hicountset:
             hiscore = hicount_to_score(int(hicount[names]))
@@ -96,13 +98,12 @@ def main(argv):
             loscore = 0
         score = max(loscore, hiscore)
 
-        if score != 0:
+        if score != 0 and score != -1:
             names = '\t'.join(names)
             confoutfile.write(names)
             confoutfile.write('\t')
             confoutfile.write(str(score))
             confoutfile.write('\n')
-
 
 if __name__ == "__main__":
     main(sys.argv) 

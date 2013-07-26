@@ -1,6 +1,5 @@
 #!/bin/bash -e
-function usage
-{
+function usage {
     echo "------------------------- Usage -------------------------"
     echo ""
     echo "      Minimum input is: PPI file and MIPS file with"
