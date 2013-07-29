@@ -107,8 +107,8 @@ if options.mode == 1:
 elif options.mode == 2:
     prediction = mvote.DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, options.neighbor)
 elif options.mode == 3:
-    (masterPredictionMatrix, mapProtNamesToMasterIdx, annMatrix) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
-    prediction = mvote.DSDWeightedMVIterative(options.dsdfile, ppbLabel, masterPredictionMatrix, options.neighbor, options.completeProteinList, mapProtNamesToMasterIdx)
+    (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
+    masterPredictionMatrix, masterLabelMatrix = mvote.DSDWeightedMVIterative(options.dsdfile, masterLabelMatrix, masterPredictionMatrix, options.neighbor, options.completeProteinList, mapProtNamesToMasterIdx)
 
 #### Phase 3: Write Output
 
@@ -120,4 +120,4 @@ elif options.mode == 2:
     options.outfile = 'DSDWeighted' + options.outfile
 elif options.mode == 3:
     options.outfile = 'DSDWeightedIterative' + options.outfile
-mvote.writeOutput(prediction, options.outfile)
+mvote.writeOutput(masterPredictionMatrix, options.outfile)

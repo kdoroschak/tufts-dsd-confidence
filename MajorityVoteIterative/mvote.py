@@ -160,9 +160,9 @@ def DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, top):
             prediction[annoPro_i, label_i*2+1] = sortedlabel[m-1-label_i]
             prediction[annoPro_i, label_i*2+2] = prelist[0,sortedlabel[m-1-label_i]]
     return prediction
-    
-    
-def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFile, annMatrix):
+
+
+def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFile, masterLabelMatrix):
     # Read in the full list of proteins (labels for master matrix)
     # Create map from protein name to index in prediction matrix
     mapProtNamesToMasterIdx = {}
@@ -182,14 +182,19 @@ def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFil
     # Read in annotation file (global)
     # Set up an annotation list with half of all labeled nodes "covered"
     #numLabels = 0
-    print annMatrix.shape
+    #print annMatrix.shape
+    #indicesToCover2 = indicesToCover
+    #indicesToCover2.sort()
+    #print ""
+    #print indicesToCover2
+    #print ""
     for index in indicesToCover:
-        print index
-        for i, item in enumerate(annMatrix[index-1]):
-            annMatrix[index-1, i] = 0
-        annMatrix[index-1, 0] = 1
+        #print index
+        for i, item in enumerate(masterLabelMatrix[index-1]):
+            masterLabelMatrix[index-1, i] = 0
+        masterLabelMatrix[index-1, 0] = 1
 
-    print annMatrix
+    #print annMatrix
 
     # Create empty prediction matrix (numAllProteins X 2*numLabels+1)    
     masterPredictionMatrix = np.zeros((numProteins, 2*numLabels+1))
@@ -198,11 +203,11 @@ def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFil
     for (protein, index) in mapProtNamesToMasterIdx.items():
         masterPredictionMatrix[index, 0] = index
 
-    return (masterPredictionMatrix, mapProtNamesToMasterIdx, annMatrix)
+    return (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix)
 
 
 ### BEGINNING OF ITERATIVE 
-def DSDWeightedMVIterative(dsdFile, labelMatrix, predictionMatrix,
+def DSDWeightedMVIterative(dsdFile, masterLabelMatrix, masterPredictionMatrix,
         desiredNumClosest, localProteinFile,
         proteinToMasterIndex):
 
@@ -242,7 +247,7 @@ def DSDWeightedMVIterative(dsdFile, labelMatrix, predictionMatrix,
     #     Prediction matrix
 
     # Set up initial values
-    numLabels = labelMatrix.shape[1] - 1
+    numLabels = masterLabelMatrix.shape[1] - 1
 
     # Parse DSD file
     dsdMatrix = myparser.parseDSD(dsdFile)
@@ -256,40 +261,71 @@ def DSDWeightedMVIterative(dsdFile, labelMatrix, predictionMatrix,
     numLocalProteins = len(localProteins)
 
     # Calculate prediction values for each unlabeled protein
-    for proteinIndex in xrange(numLocalProteins):
-        print proteinIndex
+    for localProteinIndex in xrange(numLocalProteins):
+        #if localProteinIndex == 1:
+            #print masterLabelMatrix[1]
         predictionList = np.zeros(numLabels)
 
-        indicesOfSortedDSD = np.argsort(dsdMatrix[proteinIndex,:])
+        indicesOfSortedDSD = np.argsort(dsdMatrix[localProteinIndex,:])
 
         # Counter for the number of closest DSD values extracted so far
         #   compared with desiredNumClosest, max # of DSD values for voting
         numClosestChosen = 0
 
+        # Convert to master index
+        localProteinName = localProteins[localProteinIndex]
+        masterProteinIndex = proteinToMasterIndex[localProteinName]
+
         # Go through DSD values from smallest to largest
-        #   Calculate prediction values
-        for sortedDSDIndex in indicesOfSortedDSD[1:]:
+        #   Calculate prediction values for closest labeled nodes
+        count = 0
+        for localSortedDSDIndex in indicesOfSortedDSD[1:]:
+
+            # Look up master index of node with next closest DSD value
+            currentDSDProteinName = localProteins[localSortedDSDIndex]
+            masterIndexOfCurrentDSD = proteinToMasterIndex[currentDSDProteinName]
+
+            count += 1
             if numClosestChosen >= desiredNumClosest:
+                #print count
                 break
-            if not labelMatrix[sortedDSDIndex, 0]:
-                #print sortedDSDIndex
+            # Only calculate if we're looking at a labeled protein
+            if not masterLabelMatrix[masterIndexOfCurrentDSD, 0]:
                 numClosestChosen += 1
+                noVals = True
                 for labeli in xrange(0, numLabels):
-                    predictionVal = (labelMatrix[sortedDSDIndex, labeli + 1] / dsdMatrix[proteinIndex, sortedDSDIndex])
+                    predictionVal = (masterLabelMatrix[masterIndexOfCurrentDSD, labeli + 1] / dsdMatrix[localProteinIndex, localSortedDSDIndex])
+                    if predictionVal > 0:
+                        noVals = False
                     predictionList[labeli] += predictionVal
+            #if ((localProteinIndex == 1)):
+                #print localSortedDSDIndex, localProteinIndex, predictionList
 
         # Get indices of the sorted prediction values from high to low confidence
         indicesOfSortedPredictionValues = np.argsort(predictionList)[::-1]
 
-        # Populate prediction matrix with ordered prediction values and labels
-        for labeli in xrange(0, numLabels):
-            proteinName = localProteins[proteinIndex]
-            masterProteinIndex = proteinToMasterIndex[proteinName]
-            labelNum = indicesOfSortedPredictionValues[labeli]
-            predictionMatrix[masterProteinIndex, labeli * 2 + 1] = labelNum
-            predictionMatrix[masterProteinIndex, labeli * 2 + 2] = predictionList[labelNum]
+        #if localProteinIndex == 1:
+            #print indicesOfSortedPredictionValues
 
-    return predictionMatrix
+        for labeli in xrange(0, numLabels):
+            # Populate prediction matrix with ordered prediction values and labels
+            labelNum = indicesOfSortedPredictionValues[labeli]
+            #if localProteinIndex == 2:
+                #print predictionList[labelNum]
+            #if labeli == 0 and predictionList[labelNum] == 0:
+                #print localProteinIndex, masterProteinIndex
+            masterPredictionMatrix[masterProteinIndex, labeli * 2 + 1] = labelNum
+            masterPredictionMatrix[masterProteinIndex, labeli * 2 + 2] = predictionList[labelNum]
+
+            #if localProteinIndex == 1:
+                #print masterPredictionMatrix[masterProteinIndex, 0]
+                #print masterPredictionMatrix[masterProteinIndex, labeli * 2 + 2]
+
+            # Populate the annotation matrix with the highest-confidence prediction
+            #if not masterLabelMatrix[labeli
+
+    #print masterPredictionMatrix[1]
+    return masterPredictionMatrix, masterLabelMatrix
 
     # in set of random indices, for each labeled node index
     #   insert label into prediction matrix (first column) **Now done in setup
