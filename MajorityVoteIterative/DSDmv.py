@@ -44,6 +44,7 @@ import argparse
 import myparser
 import mvote
 import sys
+import os
 
 
 temp = "parses PPIs from infile and do majority voting"
@@ -59,14 +60,16 @@ parser.add_argument("-k", default=2, help="k-fold cross validation,"
 parser.add_argument("-o", "--outfile", default="test",
                     help="output prediction file name,"
                     + " tab delimited tables")
-parser.add_argument("-d", "--dsdfile", help="dsd file name")
+parser.add_argument("-d", "--dsdfile", help="triangular matrix dsd file name")
 parser.add_argument("-t", "--neighbor",
                     default=10, help="number of lowest DSD neighbors used",
                     type=int)
+parser.add_argument("-i", "--iterfolder", help="top level folder containing"
+                    + "exactly one folder of input files (trimat and protein list) per iteration")
 parser.add_argument("-m", "--mode", default=0,
                     help="majority voting modes:"
                     + " 0 for ordinary majority voting; 1 for unweighted"
-                    + " DSD; 2 for weighted DSD."
+                    + " DSD; 2 for weighted DSD; 3 for iterative weighted DSD."
                     + " Type 0 by default", type=int, choices=[0, 1, 2, 3])
 parser.add_argument("-p", "--completeProteinList", default="test",
                     help="complete list of all proteins to be predicted,"
@@ -77,6 +80,7 @@ parser.add_argument("-p", "--completeProteinList", default="test",
 #        '-k', '2', '-o', 'haha.test',
 #        '-d', 'template//ExactDSD.list',
 #        '-r', 'template//firstLevelRandIndex.txt',
+# TODO: UPDATE THIS LIST
 #        '-m', '2', '-t', '10']
 #options = parser.parse_args(args)
 options = parser.parse_args()
@@ -92,7 +96,6 @@ pnFoldIndex = myparser.GetFoldIndex(pnRD, N, options.k)
 
 if options.mode != 0 and options.mode != 3:
     ppfDSD = myparser.parseDSD(options.dsdfile)
-    #### print ppfDSD[1,3], ppfDSD[5,11]
 
 #### Phase 2: Conduct Majority Voting
 
@@ -107,8 +110,37 @@ if options.mode == 1:
 elif options.mode == 2:
     prediction = mvote.DSDWeightedMV(ppfDSD, ppbLabel, pnFoldIndex, pnRD, options.neighbor)
 elif options.mode == 3:
+    try:
+        iterFolders = os.listdir(options.iterfolder)
+    except:
+        print "Error listing iteration folders"
+
+    iterFolders.sort()
+
+    for i, iterFolder in enumerate(iterFolders):
+        iterFolders[i] = options.iterfolder + '/' + iterFolder
+
     (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
-    masterPredictionMatrix, masterLabelMatrix = mvote.DSDWeightedMVIterative(options.dsdfile, masterLabelMatrix, masterPredictionMatrix, options.neighbor, options.completeProteinList, mapProtNamesToMasterIdx)
+
+    for iterFolder in iterFolders:
+        localFiles = os.listdir(iterFolder)
+        localtrimatfile = None
+        localproteinfile = None
+        for file in localFiles:
+            suffix = file.split('.')[-1]
+            if suffix == 'trimat':
+                localtrimatfile = iterFolder + '/' + file
+            elif suffix == 'protein':
+                localproteinfile = iterFolder + '/' + file
+            elif suffix == 'key':
+                localkeyfile = iterFolder + '/' + file
+        if localtrimatfile == None:
+            print "Trimat file not found in", iterFolder
+        elif localproteinfile == None:
+            print "Protein file not found in", iterFolder
+        elif localkeyfile == None:
+            print "Trimat key file not found in", iterFolder
+        masterPredictionMatrix, masterLabelMatrix = mvote.DSDWeightedMVIterative(localtrimatfile, masterLabelMatrix, masterPredictionMatrix, options.neighbor, localproteinfile, mapProtNamesToMasterIdx, localkeyfile)
 
 #### Phase 3: Write Output
 
