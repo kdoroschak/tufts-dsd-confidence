@@ -4,6 +4,7 @@
 Created on Wed May 22 13:56:13 2013
 
 @author: mcao01
+Modified by Katie Doroschak and Thomas Schaffner (iterative)
 
 mvote, used to do k-fold majority voting
 
@@ -178,11 +179,21 @@ def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFil
             randomIndices.append(int(line.strip()))
         numRandomIndices = len(randomIndices)
         indicesToCover = randomIndices[:(numRandomIndices/2)]
+        #indicesToCover = randomIndices[(numRandomIndices/2):]
+
+    coveredLabels = np.zeros((numProteins, numLabels + 1)) # For reference when checking performance
+    for row in xrange(numProteins):
+        for col in xrange(numLabels + 1):
+            if col == 0:
+                coveredLabels[row, col] = 1
+            else:
+                coveredLabels[row, col] = 0
 
     # Read in annotation file (global)
     # Set up an annotation list with half of all labeled nodes "covered"
     for index in indicesToCover:
         for i, item in enumerate(masterLabelMatrix[index-1]):
+            coveredLabels[index-1, i] = masterLabelMatrix[index-1, i]
             masterLabelMatrix[index-1, i] = 0
         masterLabelMatrix[index-1, 0] = 1
 
@@ -193,7 +204,7 @@ def DSDWeightedMVIterativeSetup(numLabels, randomIdxFile, completeProteinListFil
     for (protein, index) in mapProtNamesToMasterIdx.items():
         masterPredictionMatrix[index, 0] = index
 
-    return (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix)
+    return (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix, coveredLabels)
 
 
 ### BEGINNING OF ITERATIVE 
@@ -324,47 +335,17 @@ def DSDWeightedMVIterative(dsdFile, masterLabelMatrix, masterPredictionMatrix,
 
     return masterPredictionMatrix, masterLabelMatrix
 
-    # in set of random indices, for each labeled node index
-    #   insert label into prediction matrix (first column) **Now done in setup
-    #   return indices of DSD sorted by DSD value (DSD does not change)
-    #   iterate through nodes (N) in order of sorted indices *explain more?
-    #       if the node is labeled, and we haven't already gotten enough labeled nodes
-    #           extract labeled node (l)
-    #           compute prediction value (label/DSD)
-    #           add list of predictions for the current node (N)
-    #       get list of indices of predictions, sorted by prediction value
-    #           (low -> high in MF's code)
-    #       for each prediction in order
-    #           find use index to find prediction
-    #           output prediction to matrix along with prediction value (confidence?)
-    # return prediction
-'''
-    N = len(ppfDSD[:,1]) ### number of nodes
-    m = len(ppbLabel[1,:]) -1 ### number of labels
-    m1 = sum(pnFoldIndex[:,0] != 0) ### number of labeled nodes
-    prediction = np.zeros((m1, 2*m+1))
-    for annoPro_i in xrange(0, m1):
-        ***pro_i = pnRD[annoPro_i]
-        ***prediction[annoPro_i, 0] = pro_i
-        prelist = np.zeros((1, m))
-        sortedDSD = np.argsort(ppfDSD[pro_i,:])
-        j = 1
-        count = 0
-        while ((j < N) and (count < top)):
-            pro_j = sortedDSD[0,j]
-            if not ppbLabel[pro_j,0]:
-                count += 1
-                for label_i in xrange(0, m):
-                    prelist[0, label_i] += (ppbLabel[pro_j, label_i+1]/ppfDSD[pro_i, pro_j])
-            j += 1
-        sortedlabel = np.argsort(prelist[0,:])
-        #print prelist
-        #print sortedlabel
-        for label_i in xrange(0, m):
-            prediction[annoPro_i, label_i*2+1] = sortedlabel[m-1-label_i]
-            prediction[annoPro_i, label_i*2+2] = prelist[0,sortedlabel[m-1-label_i]]
-    return prediction
-'''
+def writeCoveredLabels(coveredLabels, filename):
+
+    outfile = open(filename, 'w')
+
+    (rows, cols) = coveredLabels.shape
+
+    for row in xrange(rows):
+        for col in xrange(cols):
+            outfile.write(str(int(coveredLabels[row, col])))
+        outfile.write('\n')
+    outfile.close()
 
 ##### WRITE
 def writeOutput(prediction, filename):

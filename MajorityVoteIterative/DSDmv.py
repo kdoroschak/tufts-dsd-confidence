@@ -3,6 +3,7 @@
 """
 
 @author: mcao01
+modified by Katie Doroschak and Thomas Schaffner (iterative)
 
 Used to conduct k-fold Majority Voting
 
@@ -74,6 +75,9 @@ parser.add_argument("-m", "--mode", default=0,
 parser.add_argument("-p", "--completeProteinList", default="test",
                     help="complete list of all proteins to be predicted,"
                     + " one protein per line")
+parser.add_argument("-c", "--coveredlabels", default="coveredLabels.txt",
+                    help="output file of annotations of covered labels."
+                    + " same size as .ann")
 
 #args = ['-l', "template//firstlevellabel.list", 
 #        'template//BakerAdjacency.list',
@@ -120,7 +124,7 @@ elif options.mode == 3:
     for i, iterFolder in enumerate(iterFolders):
         iterFolders[i] = options.iterfolder + '/' + iterFolder
 
-    (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
+    (masterPredictionMatrix, mapProtNamesToMasterIdx, masterLabelMatrix, coveredLabels) = mvote.DSDWeightedMVIterativeSetup(numLabels, options.rdindex, options.completeProteinList, ppbLabel)
 
     for iterFolder in iterFolders:
         localFiles = os.listdir(iterFolder)
@@ -141,6 +145,8 @@ elif options.mode == 3:
         elif localkeyfile == None:
             print "Trimat key file not found in", iterFolder
         masterPredictionMatrix, masterLabelMatrix = mvote.DSDWeightedMVIterative(localtrimatfile, masterLabelMatrix, masterPredictionMatrix, options.neighbor, localproteinfile, mapProtNamesToMasterIdx, localkeyfile)
+
+    mvote.writeCoveredLabels(coveredLabels, options.coveredlabels)
 
 #### Phase 3: Write Output
 
