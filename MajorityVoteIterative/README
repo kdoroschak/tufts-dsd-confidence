@@ -1,9 +1,9 @@
 usage: DSDmv.py [-h] [-l LABEL] [-r RDINDEX] [-k K] [-o OUTFILE] [-d DSDFILE]
-                [-t NEIGHBOR] [-m {0,1,2}]
+                [-t NEIGHBOR] [-i ITERFOLDER] [-m {0,1,2,3}]
+                [-p COMPLETEPROTEINLIST] [-c COVEREDLABELS]
                 infile
 
-parses PPIs from infile and do majority voting, k-fold cross validation, use
-CalculatePerformance.py calculate performance
+parses PPIs from infile and do majority voting
 
 positional arguments:
   infile                read PPIs from infile
@@ -18,23 +18,41 @@ optional arguments:
   -o OUTFILE, --outfile OUTFILE
                         output prediction file name, tab delimited tables
   -d DSDFILE, --dsdfile DSDFILE
-                        dsd file name
+                        triangular matrix dsd file name
   -t NEIGHBOR, --neighbor NEIGHBOR
                         number of lowest DSD neighbors used
-  -m {0,1,2}, --mode {0,1,2}
+  -i ITERFOLDER, --iterfolder ITERFOLDER
+                        top level folder containing exactly one folder of input
+                        files (trimat, protein key and protein list) per iteration
+  -m {0,1,2,3}, --mode {0,1,2,3}
                         majority voting modes: 0 for ordinary majority voting;
-                        1 for unweighted DSD; 2 for weighted DSD. Type 0 by
-                        default
-                        
+                        1 for unweighted DSD; 2 for weighted DSD; 3 for
+                        iterative weighted DSD. Type 0 by default
+  -p COMPLETEPROTEINLIST, --completeProteinList COMPLETEPROTEINLIST
+                        complete list of all proteins to be predicted, one
+                        protein per line
+  -c COVEREDLABELS, --coveredlabels COVEREDLABELS
+                        output file of annotations of covered labels. same
+                        size as .ann
 
+###########################################################################
 
+For iterfolder:
+    Must have one folder which contains only subfolders with sortable names.
+    These subfolders must each contain:
+        one DSD triangular matrix file (.trimat)
+        one protein key file (.key, same order and size as the trimat)
+        and one list of proteins to be predicted (.protein, <= size of key) 
 
 Example:
-### to conduct 2-fold cross validation, DSD weighted majority voting:
-python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 2 -t 10
+iterations/
+iterations/iter1/
+iterations/iter2/
+iterations/iter1/somename.trimat
+iterations/iter1/somename.protein.key
+iterations/iter1/somename.protein
+iterations/iter2/anyname.trimat
+iterations/iter2/anyname.protein.key
+iteratiosn/iter2/aname.protein
 
-### to conduct 2-fold cross validation, DSD unweighted majority voting:
-python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 1 -t 10
-
-### to conduct 2-fold cross validation, ordinary majority voting:
-python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 0
+coveredlabels is an annotations file. However, only the proteins which were covered (using the random indices file) for majority vote have labels in the coveredlabels file. (for use with CalculatePerformanceIterative)
