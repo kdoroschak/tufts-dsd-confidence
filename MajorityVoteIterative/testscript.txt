@@ -1,7 +1,6 @@
-python2.7 ~/MajorityVote/majorityvote/DSDmv.py -l
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann -r
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann.rand
--k 2 -o _testingiterative.mips1.mv -d
-~/bcb/Biogrid/biogrid_original/biogrid_ppi_original.dsd1.trimat -t 10 -m 3
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.adj -p
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.protein
+python2.7 ~/Desktop/bcb/dsd-confidence/MajorityVoteIterative/DSDmv.py -l /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann -r /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann.rand -k 2 -o _testingiterative.mips1.mv -d /r/bcb/DSD/confidence/Biogrid/biogrid_original/biogrid_ppi_original.dsd1.trimat -t 10 -m 3 /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.adj -p /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.protein -i /r/bcb/DSD/confidence/gitrepo/MajorityVoteIterative/test_iterations -c coveredLabels.ann.covered
+
+python2.7 ./CalculatePerformanceIterative.py coveredLabels.ann.covered DSDWeightedIterative_testingiterative.mips1.mv
+
+
+python2.7 ~/Desktop/bcb/dsd-confidence/MajorityVoteIterative/DSDmv.py -l /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann -r /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann.rand -k 2 -o _testingiterative.mips1.mv -d /r/bcb/DSD/confidence/Biogrid/biogrid_original/biogrid_ppi_original.dsd1.trimat -t 10 -m 3 /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.adj -p /r/bcb/DSD/confidence/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.protein -i /r/bcb/DSD/confidence/gitrepo/MajorityVoteIterative/test_iterations -c coveredLabels.ann.covered ; python2.7 ./CalculatePerformanceIterative.py coveredLabels.ann.covered DSDWeightedIterative_testingiterative.mips1.mv

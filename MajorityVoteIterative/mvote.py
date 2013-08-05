@@ -280,6 +280,10 @@ def DSDWeightedMVIterative(dsdFile, masterLabelMatrix, masterPredictionMatrix,
     for localProteinIndex in localIndicesToPredict:
         predictionList = np.zeros(numLabels)
 
+        if localProteinIndex >= dsdMatrix.shape[0]:
+            #print localProteinIndex
+            continue
+
         indicesOfSortedDSD = np.argsort(dsdMatrix[localProteinIndex,:])
 
         # Counter for the number of closest DSD values extracted so far
@@ -318,21 +322,57 @@ def DSDWeightedMVIterative(dsdFile, masterLabelMatrix, masterPredictionMatrix,
             # Populate prediction matrix with ordered prediction values and labels
             labelNum = indicesOfSortedPredictionValues[labeli]
 
+            # Add to label matrix (test)
+            #if labeli == 0:
+                #masterLabelMatrix[masterProteinIndex, labelNum+1] = 1
+                #masterLabelMatrix[masterProteinIndex, 0] = 0
+
             masterPredictionMatrix[masterProteinIndex, labeli * 2 + 1] = labelNum
             masterPredictionMatrix[masterProteinIndex, labeli * 2 + 2] = predictionList[labelNum]
 
+    #count = 0
+
+    # Clear out labels in label matrix (for testing purposes)
+    #for masterProteinIndex in xrange(masterLabelMatrix.shape[0]):
+        #masterLabelMatrix[masterProteinIndex, 0] = 1
+        #for labeli in xrange(numLabels):
+            #masterLabelMatrix[masterProteinIndex, labeli] = 0
 
     # store in label matrix
     for localProteinIndex in localIndicesToPredict:
-        for labeli in xrange(0, numLabels):
-            # Extract first prediction to put in label matrix
-            firstPrediction = masterPredictionMatrix[masterProteinIndex, 1]
 
-            # Make sure there is a prediction, then store in label matrix
-            if firstPrediction != 0:
-                masterLabelMatrix[masterProteinIndex, firstPrediction + 1] = 1
-                masterLabelMatrix[masterProteinIndex, 0] = 0
+        proteinName = localProteins[localProteinIndex]
+        masterProteinIndex = proteinToMasterIndex[proteinName]
 
+
+        #Extract first prediction to put in label matrix
+        firstPrediction = masterPredictionMatrix[masterProteinIndex, 1]
+        #lastPrediction = masterPredictionMatrix[masterProteinIndex, -2]
+        #secondPrediction = masterPredictionMatrix[masterProteinIndex, 3]
+        #thirdPrediction = masterPredictionMatrix[masterProteinIndex, 5]
+        firstScore = masterPredictionMatrix[masterProteinIndex, 2]
+        #secondScore = masterPredictionMatrix[masterProteinIndex, 4]
+        #thirdScore = masterPredictionMatrix[masterProteinIndex, 6]
+
+        # Make sure there is a prediction, then store in label matrix
+        if firstScore != 0:
+            #if masterLabelMatrix[masterProteinIndex, 0] == 1:
+                #count += 1
+            masterLabelMatrix[masterProteinIndex, firstPrediction + 1] = 1
+            #masterLabelMatrix[masterProteinIndex, lastPrediction + 1] = 1
+            #masterLabelMatrix[masterProteinIndex, 0] = 0
+        #if secondScore != 0:
+            #if masterLabelMatrix[masterProteinIndex, 0] == 1:
+                #count += 1
+            #masterLabelMatrix[masterProteinIndex, secondPrediction + 1] = 1
+            #masterLabelMatrix[masterProteinIndex, 0] = 0
+        #if thirdScore != 0:
+            #if masterLabelMatrix[masterProteinIndex, 0] == 1:
+                #count += 1
+            #masterLabelMatrix[masterProteinIndex, thirdPrediction + 1] = 1
+            #masterLabelMatrix[masterProteinIndex, 0] = 0
+
+    #print count
     return masterPredictionMatrix, masterLabelMatrix
 
 def writeCoveredLabels(coveredLabels, filename):
