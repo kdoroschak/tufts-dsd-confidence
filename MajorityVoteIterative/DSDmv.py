@@ -150,12 +150,23 @@ elif options.mode == 3:
 
 #### Phase 3: Write Output
 
+parts = options.outfile.split('/')
+name = parts[-1]
+if len(parts) > 1:
+    path = '/'.join(parts[:-1])
+else:
+    path = "."
+
 if options.mode == 0:
-    options.outfile = 'OrdMV' + options.outfile
+    name = 'OrdMV' + name
+    outfilename = '/'.join([path, name])
 elif options.mode == 1:
-    options.outfile = 'DSDUnweight' + options.outfile
+    name = 'DSDUnweight' + name
+    outfilename = '/'.join([path, name])
 elif options.mode == 2:
-    options.outfile = 'DSDWeighted' + options.outfile
+    name = 'DSDWeighted' + name
+    outfilename = '/'.join([path, name])
 elif options.mode == 3:
-    options.outfile = 'DSDWeightedIterative' + options.outfile
-mvote.writeOutput(masterPredictionMatrix, options.outfile)
+    name = 'DSDWeightedIterative' + name
+    outfilename = '/'.join([path, name])
+mvote.writeOutput(masterPredictionMatrix, outfilename)

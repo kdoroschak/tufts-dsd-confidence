@@ -1,7 +1,0 @@
-python2.7 ~/MajorityVote/majorityvote/DSDmv.py -l
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann -r
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.mips1.ann.rand
--k 2 -o _testingiterative.mips1.mv -d
-~/bcb/Biogrid/biogrid_original/biogrid_ppi_original.dsd1.trimat -t 10 -m 3
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.adj -p
-~/bcb/Biogrid/biogrid_mv_reusable/biogrid_ppi_connected_ordered.protein
