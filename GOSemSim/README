@@ -1,0 +1,5 @@
+README: GOSemSimRunner.R
+
+Generate semantic similarity scores for edges in a protein list. 
+
+There are no command line options implemented (not worth it for the extent of the usage), so you'll need to change three things internally - working directory, input file, and output file.

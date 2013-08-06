@@ -1,3 +1,6 @@
+ITERATIVE MAJORITY VOTE
+* For directory structure, see the bottom of this document.
+
 usage: DSDmv.py [-h] [-l LABEL] [-r RDINDEX] [-k K] [-o OUTFILE] [-d DSDFILE]
                 [-t NEIGHBOR] [-i ITERFOLDER] [-m {0,1,2,3}]
                 [-p COMPLETEPROTEINLIST] [-c COVEREDLABELS]

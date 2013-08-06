@@ -1,0 +1,8 @@
+README: remove_single_edge
+
+remove a single edge from the network, specified by two proteins. 
+Used when we were attempting to isolate small local changes in DSD.
+
+sunfire31{kdorosch}117: python2.6 remove_single_edge -h
+[infile|ppi] [protein name] [protein name] [outfile|ppi]
+

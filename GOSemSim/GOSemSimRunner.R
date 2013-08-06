@@ -8,7 +8,7 @@ library(GO.db)
 setwd('/Users/kdoroschak/Documents/DREU/GOSemSim')
 
 # ---------- OPEN FILES ----------
-biogrid = read.delim("biogrid_ppi_nom-3.ppi", header=FALSE)
+biogrid = read.delim("biogrid_ppi_nom.ppi", header=FALSE)
 numPPIs = nrow(biogrid)
 biogrid <- data.frame(lapply(biogrid, as.character), stringsAsFactors=FALSE)
 biogrid["GOSemSimScore"] <- NA
@@ -38,5 +38,5 @@ print(processedcount)
 print(numPPIs)
 
 # ---------- WRITE TO FILE ---------
-write.table(biogrid, file = "biogrid_ppi_nom-3.gosemsim.prob", 
+write.table(biogrid, file = "biogrid_ppi_nom.gosemsim.prob", 
             sep = '\t', quote = FALSE, col.names = FALSE, row.names = FALSE)

@@ -1,0 +1,47 @@
+Code modified by Tony Cannistra and Inbar Fried.
+Input a matrix of weights to use for allocating votes.
+
+usage: DSDmv.py [-h] [-l LABEL] [-r RDINDEX] [-k K] [-o OUTFILE] [-d DSDFILE]
+                [-s SEQUENCEFILE] [-t NEIGHBOR] [-m {0,1,2,3}] [-a A] [-b B]
+                [-N N]
+                infile
+
+parses PPIs from infile and do majority voting
+
+positional arguments:
+  infile                read PPIs from infile
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -l LABEL, --label LABEL
+                        label list file
+  -r RDINDEX, --rdindex RDINDEX
+                        file of random indeces for labeled nodes
+  -k K                  k-fold cross validation, 2 by default
+  -o OUTFILE, --outfile OUTFILE
+                        output prediction file name, tab delimited tables
+  -d DSDFILE, --dsdfile DSDFILE
+                        dsd file name
+  -s SEQUENCEFILE, --sequencefile SEQUENCEFILE
+                        sequence distance matrix
+  -t NEIGHBOR, --neighbor NEIGHBOR
+                        number of lowest DSD neighbors used
+  -m {0,1,2,3}, --mode {0,1,2,3}
+                        majority voting modes: 0 for ordinary majority voting;
+                        1 for unweighted DSD; 2 for weighted DSD, 3 for
+                        sequence-based. Type 0 by default
+  -a A                  DSD scale value, 1 by default
+  -b B                  Sequence scale value, 1 by default
+  -N N                  sequence normalizer, 1 by default
+                        
+
+
+Example:
+### to conduct 2-fold cross validation, DSD weighted majority voting:
+python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 2 -t 10
+
+### to conduct 2-fold cross validation, DSD unweighted majority voting:
+python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 1 -t 10
+
+### to conduct 2-fold cross validation, ordinary majority voting:
+python DSDmv.py -l template//firstlevellabel.list template//BakerAdjacency.list -k 2 -o haha.test -d template//ExactDSD.list -r template//firstLevelRandIndex.txt -m 0

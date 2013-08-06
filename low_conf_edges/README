@@ -1,0 +1,3 @@
+README: low_conf_edges directory
+
+Somewhat of a junk drawer for scripts used to extract the lowest confidence edges of the network. Mostly used for playing around with confidence values, so YMMV.
