@@ -4,8 +4,8 @@ import os, sys, argparse, numpy as np, re, collections
 
 def main(argv):
 	# Build command line argument parser
-	parser = argparse.ArgumentParser(description='Take the average of multiple DSD files using one of several averaging methods.')
-	parser.add_argument('-o', required=True, type=str, help='name of the output transition matrix file (tab-delimited 2D matrix)')
+	parser = argparse.ArgumentParser(description='Build a matrix of weights from an input protein list and a specified order. Weights are inserted as-is, with no modifications other than position.')
+	parser.add_argument('-o', required=True, type=str, help='name of the output weight matrix file (tab-delimited 2D matrix)')
 	parser.add_argument('-i', required=True, type=str, help='name of PPI input file. must be tab-delimited, fully connected, and have confidence score as 3rd column')
 	parser.add_argument('-p', required=True, type=str, help='name of the ordered list of proteins, for ordering the matrix')
 	args = parser.parse_args()

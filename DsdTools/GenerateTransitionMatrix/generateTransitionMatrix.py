@@ -4,8 +4,8 @@ import os, sys, argparse, numpy as np, re, collections, time
 
 def main(argv):
 	# Build command line argument parser
-	parser = argparse.ArgumentParser(description='Take the average of multiple DSD files using one of several averaging methods.')
-	parser.add_argument('-o', required=True, type=str, help='name of the output transition matrix file (tab-delimited 2D matrix)')
+	parser = argparse.ArgumentParser(description='Generate normalized transitions for use with DSD-transition.')
+	parser.add_argument('-o', required=True, type=str, help='name of the output transition file (tab-delimited )')
 	parser.add_argument('-i', required=True, type=str, help='name of PPI input file. must be tab-delimited, fully connected, and have confidence score as 3rd column')
 	args = parser.parse_args()
 	ppiFile = args.i
@@ -21,12 +21,8 @@ def main(argv):
 	conf = ""
 	names = ""
 
-	#transtime = time.clock()
-	#(transMatrix, names) = getTransMatrix(conf, names)
-	#print "Getting transition matrix took " + str(time.clock() - transtime) + "s."
 		
 	writetime = time.clock()
-	#np.savetxt(outputFile, trans, delimiter='\t')
 	with open(outputFile, 'w') as outFile:
 		outFile.write(transList)	
 	print "Writing the matrix took " + str(time.clock() - writetime) + "s."

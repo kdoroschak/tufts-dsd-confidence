@@ -1,0 +1,9 @@
+README: script_runners directory
+
+Here we keep scripts used to run other scripts.
+
+To run multiple DSDs:
+    use DsdRunner.sh
+
+To run majority vote with multiple random partitions:
+    use run_rand_partitions.sh

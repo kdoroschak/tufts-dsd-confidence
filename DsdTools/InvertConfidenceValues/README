@@ -1,0 +1,18 @@
+README: ppiConfidenceFlipper.py
+
+Takes 1-confidence for each confidence value in the file.
+
+Used to primitively examine the robustness of the confidence values.
+
+
+
+usage: ppiConfidenceFlipper.py [-h] -o O -p P
+
+Invert confidence scores by taking 1-score for each edge in the PPI.
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -o O        name of the output file (inverted PPI file)
+  -p P        name of PPI input file. must be tab-delimited with confidence
+              score as 3rd column
+

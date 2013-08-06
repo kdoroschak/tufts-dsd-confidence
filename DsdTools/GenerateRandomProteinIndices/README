@@ -1,0 +1,8 @@
+README: randomOrderProteins.py
+
+This script is used to generate a list of randomly ordered indices corresponding to annotated proteins in the input annotation file. The output of this script was designed for use as input to M. Cao's majority vote. 
+
+python2.7 randomOrderProteins.py -h
+-i  list of proteins that have associated annotations
+-o  name of output file (random list of indices corresponding to rows in the input file)
+

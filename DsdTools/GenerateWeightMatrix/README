@@ -1,0 +1,16 @@
+README: generateOrderedWeightMatrix.py
+
+Transforms a list of weights into a matrix of weights. Order is specified by a protein list. Directedness is not conserved, i.e. the weight at AB will be inserted at AB and BA.
+
+usage: generateOrderedWeightMatrix.py [-h] -o O -i I -p P
+
+Build a matrix of weights from an input protein list and a specified order.
+Weights are inserted as-is, with no modifications other than position.
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -o O        name of the output weight matrix file (tab-delimited 2D matrix)
+  -i I        name of PPI input file. must be tab-delimited, fully connected,
+              and have confidence score as 3rd column
+  -p P        name of the ordered list of proteins, for ordering the matrix
+

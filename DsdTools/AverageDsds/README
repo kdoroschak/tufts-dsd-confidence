@@ -1,0 +1,16 @@
+README: AverageDsds directory
+
+This directory contains all scripts for averaging DSDs in list or matrix format.
+
+DsdAverage-list.py
+DsdAverage-matrix.py
+module_*.py
+
+To average 2+ LIST DSDs, use DsdAverage-list.py.
+
+To average 2+ MATRIX DSDs, use DsdAverage-matrix.py PLUS the desired module.
+Modules contain the code that does the actual averaging, so the method can be easily and quickly swapped out, changed, or added.
+
+Both the list and matrix version require all of the DSDs-to-be-averaged to be placed in a single directory with nothing else.
+
+For the matrix version, you'll also need to point to a DSD that contains all the proteins included in any the DSDs-to-be-averaged.

@@ -1,0 +1,30 @@
+README: compareTwoDsds.py
+
+Primitively compare two DSDs to illuminate how and where the DSD changed. Comparisons include things like the difference in overall average between the two, The number of positions that increased and decreased, etc. If desired, you may include two proteins and an adjacency matrix to investigate the change in an edge's neighborhood between two DSD runs.
+
+usage: compareTwoDsds.py [-h] --originalDsd ORIGINALDSD --newDsd NEWDSD -o
+                         OUTFILE [-a ADJMATRIX ADJMATRIX]
+                         [-p PROTEINS PROTEINS]
+
+Compare two individual DSDs to illuminate how and where the DSD changed.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --originalDsd ORIGINALDSD
+                        DSD to use as a baseline for comparisons with the new
+                        DSD.
+  --newDsd NEWDSD       DSD to compare against the original DSD.
+  -o OUTFILE, --outFile OUTFILE
+                        Output file to store text-based results of
+                        comparisons.
+  -a ADJMATRIX ADJMATRIX, --adjMatrix ADJMATRIX ADJMATRIX
+                        Adjacency matrix and its specified order to determine
+                        neighbors for more detailed comparisons. If this arg
+                        is not provided, these comparisons will not be done.
+                        Same format as DSD. Specify matrix as first arg and
+                        its corresponding ordered list of proteins as the
+                        second.
+  -p PROTEINS PROTEINS, --proteins PROTEINS PROTEINS
+                        Edge eliminated in the new DSD. Will be used for
+                        neighborhood calculations. If not provided, these
+                        comparisons will not be done.

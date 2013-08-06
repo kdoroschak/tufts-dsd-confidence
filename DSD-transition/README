@@ -1,0 +1,124 @@
+*************************************************************************
+*****************************  About:  **********************************
+*************************************************************************
+DSDv0.5 is a diffusion state distance calculation program. It uses global
+topological properties of graphs through random walks to compute
+proximity in terms of node's funcationality in graphs such as
+protein-protein interaction networks.
+
+If you use DSD, please cite:
+Cao M, Zhang H, Daniels N, Park J, Crovella M, Cowen L, Hescott B
+(2013) Going the distance for protein function prediction. 
+Submitted for publication.
+
+DSD is licensed under the GNU public license version 2.0. If you would
+like to license DSD in an environment where the GNU public license is
+unacceptable (such as inclusion in a non-GPL software package) commercial
+Matt licensing is available through Tufts offices of Technology Transfer.
+Contact cowen@cs.tufts.edu for more information.
+Contact mcao01@cs.tufts.edu for issues involving the code.
+Address: 161 College Ave., Medford, MA 02155, USA
+
+*************************************************************************
+****************************  Installation:  ****************************
+*************************************************************************
+To run it, simply copy all source files to the directory you want DSD to
+run from and type in the command to run it. In order to support other
+formats, we also provide a program PPIConvert that converts the matrix
+represented PPI networks into PPI list file, which is acceptable to
+DSD.
+
+The code requires Python 2.7+ and numpy installed.
+
+
+*************************************************************************
+****************************  Overview:  ********************************
+*************************************************************************
+DSD takes a PPI file as input. The PPI file must be that each line
+contains a PPI and the two interactors separated by comma/tab/space from
+the biginning of lines.
+
+It will firstly compute the largest connected component, calculate DSD
+for all pairs of nodes in the component, and then output in one of the
+following formats (tab delimited):
+
+Type 1, "matrix" -- it contains a N by N DSD matrix and the node IDs
+                    are at the first line and the fist row for all N
+                    nodes in the largest connected component
+
+Type 2, "list" -- it contains three columns, where the first two columns
+                  are interactors from the input file and the third
+                  column as the DSD value between the two nodes; NA if
+                  either of the two nodes is not in the largest component
+
+Type 3, "top" -- it contains for each node in the largest component one
+		 line where the K nodes with lowest DSD are followed.
+
+
+*************************************************************************
+****************************  Command Line ******************************
+*************************************************************************
+usage: DSDmain.py [-h] [-n NRW] [-o OUTFILE] [-q] [-f] [-m {1,2,3}]
+                  [--outformat {matrix,list,top}] [-k NTOP] [-t THRESHOLD]
+                  infile
+
+parses PPIs from infile and calculates DSD
+
+positional arguments:
+  infile                read PPIs from infile, either a .csv or .tab file that
+                        contains a tab/comma/space delimited table with both
+                        IDs at first row and first column, or a .list file
+                        that contains for each line one interacting pair
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c, --converge        calculate converged DSD
+  -n NRW, --nRW NRW     length of random walks, 5 by default
+  -o OUTFILE, --outfile OUTFILE
+                        output DSD file name, tab delimited tables, stdout by
+                        default
+  -q, --quiet           turn off status message
+  -f, --force           calculate DSD for the whole graph despite it is not
+                        connected if it is turned on; otherwise, calculate DSD
+                        for the largest component
+  -m {1,2,3}, --outFMT {1,2,3}
+                        the format of output DSD file: type 1 for matrix; type
+                        2 for pairs at each line; type 3 for top K proteins
+                        with lowest DSD. Type 1 by default
+  --outformat {matrix,list,top}
+                        the format of output DSD file: 'matrix' for matrix,
+                        type 1; 'list' for pairs at each line, type 2; 'top'
+                        for top K proteins with lowest DSD, type 3. 'matrix'
+                        by default
+  -k NTOP, --nTop NTOP  if chosen to output lowest DSD nodes, output at most K
+                        nodes with lowest DSD, 10 by default
+  -t THRESHOLD, --threshold THRESHOLD
+                        threshold for PPIs' confidence score, if applied
+                        
+                        
+*************************************************************************
+******************************  Examples ********************************
+*************************************************************************
+In the downloaded package, two test files are included: 
+small.tab and toy.example,
+on which you can run using the following command:
+
+$python DSDmain.py small.tab
+$python DSDmain.py toy.example
+
+Other files: testAllMatrix.dat, testColMatrix.dat, testRowMatrix.dat,
+testOnlyMatrix.dat are matrix represented files with/without node ID
+at rows/columns. You can run:
+
+$python PPIconvert.py testAllMatrix.dat -o PPIList1
+$python PPIconvert.py testColMatrix.dat -o PPIList2
+$python PPIconvert.py testRowMatrix.dat -o PPIList3
+$python PPIconvert.py testOnlyMatrix.dat -o PPIList4
+
+And you will have these four files:
+PPI1.list
+PPI2.list
+PPI3.list
+PPI4.list
+which contains one PPI at a line and you can feed directly into
+DSD program

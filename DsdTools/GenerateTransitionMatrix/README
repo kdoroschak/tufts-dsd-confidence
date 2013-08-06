@@ -1,0 +1,18 @@
+README: generateTransitionMatrix.py
+
+This script is used to generate a list of transitions as required by DSD-transition.
+
+usage: generateTransitionMatrix.py [-h] -o O -i I
+
+Generate normalized transitions for use with DSD-transition.
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -o O        name of the output transition file (tab-delimited )
+  -i I        name of PPI input file. must be tab-delimited, fully connected,
+              and have confidence score as 3rd column
+
+
+No assumptions are made about directed or undirected networks, i.e. both AB and BA are included in the output.
+
+NOTE: At its current state, "generateTransitionMatrix" is a misnomer, generating a list instead of a matrix. However, it would be almost painless to change it back to outputting a matrix if needed.
