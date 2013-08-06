@@ -1,0 +1,54 @@
+DSD-transition
+--------------
+Mengfei's thing. Has been changed so it can use a transition matrix.
+
+Out of sync. Two different versions floating around.
+
+
+DsdTools
+--------
+  Transition matrix format: edge edge transition_score
+
+  DsdAverage - Higher-order. Uses other modules in directory to change 
+               behavior.
+  CompareDsds - A visualization tool.
+  GenerateRandomProteinIndices - Annotation file as input.
+                                 Produces something for majority vote?
+  GenerateWeightMatrix - Takes a PPI with confidence and produces weights.
+  script_runners/DsdRunner.sh - Batch run DSD computations.
+  GOSemSimRunner.R - Not really used?
+  MajorityVoteIterative - Modified Mengfei's code
+                          Requires a bit of setup with files in the
+                          right place. See the docs in that directory.
+  NetworkGenerator - Used to run "100 dsds"?
+                     Specify number of networks with confidence file,
+                     and determine probability that an edge exists as output.
+  file_reformatting - Junk directory. Extracting low confidence edges? Here!
+  run_mv - Runs majority vote from varying starting points.
+           Recomputes intermediate files if they aren't passed.
+  weight_by_lit - Assigning weights by publications.
+
+
+Data
+----
+Biogrid data are the crown jewels.
+    Biogrid directory contains data for different iterations using different
+    confidences. README has been promised.
+
+    biogrid_mv_reusable - Important. Has original full and connected PPI.
+                          Annotations and adjacency matrix.
+                          Reusable for pretty much everything?
+
+    biogrid_original - Biogrid data without confidence.
+                       Is used frequency to regenerate other data?
+
+GetAdjacency - Mengfei's thing? Get rid of it?
+
+MIPS - Straight copy of DB.
+
+MajorityVote_prep - ???
+
+Mint - First PPI network. Not really used any more.
+       Conventions and organization is similar to Biogrid directory.
+                          
+
