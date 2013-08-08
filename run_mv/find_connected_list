@@ -53,7 +53,9 @@ def discard_disconnected(infile, valid):
     for line in infile:
         cols = line.split('\t')
         protA = cols[0]
-        protB = cols[1][0:-1]
+        protB = cols[1]
+        if len(cols) == 2:
+            protB = protB[:-1]
 
         if (protA in valid) and (protB in valid):
             prots = [protA, protB]
